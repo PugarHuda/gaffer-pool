@@ -1,219 +1,142 @@
-# Sehat 🏠🩺
+# Gaffer Pool ⚽
 
-![Sehat](assets/banner.png)
+**A football prediction game where the AI analyst, the money, and the network all run on your own device — no house, no cloud, your keys.**
 
-**Offline-first family health assistant — 100% on-device AI via the [QVAC SDK](https://qvac.tether.io).**
+Gaffer Pool is a Tether Developers Cup entry that combines **three** Tether tracks in one football-native product: an on-device match analyst (QVAC), self-custodial USDt stakes among friends (WDK), and peer-to-peer pool sync (Pears).
 
-📊 One-glance metrics: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) · Architecture below.
+---
 
-![Architecture](assets/architecture.png)
+## The problem — and why the full Tether stack fits football
 
-Built for **QVAC Hackathon I – Unleash Edge AI** (June 2026).
-Track: **General Purpose** (BYOH desktop) · creative **Psy-model** use (MedPsy-4B) · Build in Public: `#teamSehat`
-Repo: https://github.com/PugarHuda/sehat
+Friends already predict match results and put a little money on it. Today that means handing your picks to a cloud app, your money to a bookmaker, and your data to whoever runs the servers. Three parties you have to trust, none of them you.
 
-> **Powered by QVAC MedPsy-4B** — Tether's own edge medical model. We independently
-> reproduced its efficiency on a GTX 1660 Super: **~16× faster TTFT and +34% throughput
-> vs Google's MedGemma-4B** on the same prompt and GPU (see
-> [`artifacts/medpsy-vs-medgemma.md`](artifacts/medpsy-vs-medgemma.md)). Run
-> `SEHAT_MODEL=medgemma npm start` to A/B it yourself.
+Football is the perfect shape for the whole Tether stack because the three problems map one-to-one onto three tracks:
 
-> ⚠️ Sehat is an educational / personal-organization tool. It is **not** a medical device
-> and does not provide diagnosis or treatment. Always consult a healthcare professional.
+- You want an **edge** (who's in form, who's injured, how the tactics match up) → a private on-device analyst. **QVAC.**
+- You want to **stake** with friends without a bookmaker holding the pot → self-custodial wallets that settle wallet-to-wallet. **WDK.**
+- You want the group's pool to **stay in sync** without a server → peers gossip state directly. **Pears.**
 
-## What it does
+The AI is each player's private advisor, the money layer is self-custodial, the network layer is peer-to-peer. That trio — all three tracks in one product — is the pitch.
 
-Sehat turns one regular family PC into a private health hub. Everything runs locally;
-no data ever leaves the home network.
+---
 
-1. **Ingest** — lab results, prescriptions, and doctor notes become a private, on-disk
-   vector index. Paper enters by photo: local OCR reads it (0.94 avg confidence) straight
-   into the index. You can also paste a record or **import a CSV** (`date,metric,value`).
-2. **Ask, in any language** — by text or voice. **MedPsy** reasons over the retrieved
-   records and answers with `[doc: ...]` citations, including cross-document trends
-   ("compare Dad's June labs against March"). Language is **auto-detected** — ask in
-   Indonesian, get an Indonesian answer; English in, English out.
-3. **Auto-capture from chat** — say "my fasting glucose today is 95, BP 118/76" and Sehat
-   extracts and saves a dated record (a 📌 Saved chip confirms). A pre-filter + extraction
-   pass tell *reporting* from *asking*, so plain questions are never saved.
-4. **Family dashboard** — per-member cards with trend sparklines; tap one for a detail
-   drawer (each vital with reference range, status, change vs previous, % since first,
-   min–max), medications, and allergies. Mark a member as **"You"** (profile name).
-5. **Proactive alerts** — Sehat scans the records and flags rising/abnormal vitals, then
-   MedPsy writes a calm plain-language briefing you can **🔊 listen to** (QVAC TTS).
-6. **Reminders & Emergency QR** — upcoming re-tests / follow-ups / vaccine dates parsed
-   from documents; an **offline Emergency QR** per member (allergies, conditions, meds,
-   recent vitals — scannable, no cloud); one-click **Markdown export**.
-7. **Orchestrate (agent mode)** — a Qwen3-1.7B orchestrator with QVAC tool calling plans
-   the work: `search_records` (RAG), `calculate_change` (deterministic math, no LLM
-   arithmetic), and `consult` (hands medical interpretation to the MedPsy specialist).
-8. **Reach every device** —
-   - **LAN web UI / PWA**: open the link below on any phone; invite the whole family with 🔗.
-   - **Hands-free voice (any language)**: tap 🎙️, speak, and the answer is spoken back
-     (multilingual Whisper STT → MedPsy → Supertonic TTS) — a full local voice loop in
-     the browser. Whisper auto-detects the spoken language (Indonesian, English, …).
-   - **QVAC P2P delegated inference**: a client device loads *no model* and runs completions
-     on the home PC via Holepunch DHT, addressed by public key — no server, no port
-     forwarding, works across NATs. Start with `SEHAT_P2P=1 npm start`; a relative on **any
-     network** connects via `npm run delegate <publicKey>` (key shown in the Invite panel).
-9. **Resist attacks** — documents are untrusted data. `npm run test:injection` ingests a
-   poisoned note (role-play hijack + canary exfiltration + phishing); Sehat answers the
-   real fact, refuses the injection, and warns the document looks tampered with. PASS.
+## The three tracks, and how each is really used
 
-## Open it (100% local — no internet, same Wi-Fi as the PC)
+### 1. QVAC — the on-device analyst ("Gaffer")
 
-```
-Phone, easy (chat/dashboard/alerts/QR):   http://<desktop-ip>:8788
-Phone, full (adds mic + voice, HTTPS):    https://<desktop-ip>:8787   (accept the cert once)
-On the PC:                                http://localhost:8788
+Runs **Qwen3-4B** (general LLM) + **GTE-large** embeddings **100% locally** via the `@qvac/sdk`. No cloud, no API keys. It does RAG over a local football corpus in `data/football/` (club and player profiles, a match report, tactics, set-pieces) and answers analyst questions grounded in — and citing — those source docs.
+
+```bash
+npm run demo:analyst
 ```
 
-The mic/voice loop needs HTTPS (browsers only allow microphone access in a secure
-context); everything else works over plain HTTP. After models are cached you can pull the
-internet entirely — Sehat keeps working on the LAN.
+You'll see it ingest the corpus, then answer three scouting questions with live token streaming and per-answer stats:
 
-**Desktop app (native window):** `npm run desktop` launches Sehat as an Electron
-app — it boots the local server, loads the on-device models, and opens the UI in a
-native window (mic permission auto-granted, no cert prompt). Same 100%-local engine,
-zero cloud.
+```
+[search 41 ms | TTFT 380 ms | 512 tokens | 24.3 tok/s]
+```
 
-**Package it as a distributable app:** `npm run package` runs the official
-`@qvac/sdk/electron-forge` plugin, which bundles the QVAC worker + native addons
-(pruning the model backends we don't use, per `qvac.config.json`) so models run
-inside the package. On a host where Forge's zip extractor stalls, assemble the
-portable build directly with `powershell -ExecutionPolicy Bypass -File
-scripts/make-portable.ps1` → `out/Sehat-win32-x64/Sehat.exe` (+ a zip). The packaged
-app was verified end-to-end: native window, in-package QVAC worker, live MedPsy
-streaming over RAG — all offline.
+### 2. WDK — self-custodial stakes, no bookmaker
 
-## Measured performance (GTX 1660 Super, all local)
+Each player holds their **own** keys — a self-custodial WDK wallet (`@tetherto/wdk` + `@tetherto/wdk-wallet-evm`: seed phrase → EVM account). Each player **signs their own stake commitment** with their own key, and the pot settles **wallet-to-wallet in USDt** via a real ERC-20 transfer. No bookmaker, no house, no cloud holds the money.
 
-| Workload | Result |
-|---|---|
-| **QVAC MedPsy-4B Q4_K_M, GPU** | **TTFT 343 ms · 59.7 tok/s** (vs MedGemma-4B: TTFT 5,626 ms · 44.4 tok/s, same prompt/GPU) |
-| Llama 3.2 1B Q4, GPU (`gpu_layers: 99`) | 127.6 tok/s · TTFT 116 ms (CPU baseline 31.6 tok/s) |
-| RAG vector search (GTE-large FP16) | `ragReindex` (IVF) cuts 200-doc search 125 ms → 11 ms |
-| OCR sweep (13 photographed docs) | **13/13 pass** · print, handwriting, rotated, small-font & Indonesian (conf 0.66–0.97) |
-| STT (Whisper large-v3-turbo) | multilingual, auto-detects language; transcribes on-device |
-| Multi-agent run (tool calls incl. MedPsy consult) | completes within the 8 k ctx window |
-| Reliability on 6 GB VRAM | a VRAM guard keeps one optional model (STT/OCR/TTS/agent) resident at a time → voice→agent→OCR run without OOM |
-| Vision: photo → structured analysis (no OCR) | all values read correctly; 43.7 tok/s (SDK stats) |
-| **LoRA fine-tune (QVAC Fabric), Qwen3-600M** | hand-written set: loss 3.00→1.77 in 238 s; **real QVAC Genesis-I medical data: loss 4.39→1.51, val acc 68.8%** |
-| ID↔EN translation (Bergamot, CPU) | sub-second per message |
-| P2P delegated completion (no local model) | TTFT 0.9–1.3 s; 4.8 tok/s streamed / ~7.7 batched (transport-bound, documented honestly) |
+```bash
+npm run demo:pool
+```
 
-Numbers come from the committed [`artifacts/audit-log.jsonl`](artifacts/audit-log.jsonl)
-(prompt, tokens, TTFT, tok/s per call) and [`artifacts/qa-report.md`](artifacts/qa-report.md)
-(22/22 server cases + 13/13 OCR). SDK-native telemetry: [`artifacts/profiler-export.json`](artifacts/profiler-export.json).
+Prints each player's self-custody address, their signed commitment, the winner, and the settlement — a real ERC-20 `transfer` calldata (`0xa9059cbb…`):
 
-## Models used (all via @qvac/sdk, all on-device)
+```
+Alice  0x…
+Bob    0x…
+  Alice: HOME — sig 0x…
+  Bob:   AWAY — sig 0x…
+🤝 Settlement — losers pay the winner directly (no house):
+     to(token) 0x…  data 0xa9059cbb…
+```
 
-| Role | Model |
-|---|---|
-| Medical reasoning (primary brain) | **QVAC MedPsy-4B Q4_K_M** (Tether's Psy model, from HF) |
-| Medical reasoning (A/B benchmark) | `MEDGEMMA_4B_IT_Q4_1` (Google, comparison only) |
-| Orchestrator agent (tool calling) | `QWEN3_1_7B_INST_Q4` |
-| Embeddings / RAG | `GTE_LARGE_FP16` (higher-accuracy retrieval) |
-| Speech-to-text (multilingual, auto-detect) | `WHISPER_LARGE_V3_TURBO` |
-| Text-to-speech | `TTS_EN_SUPERTONIC_Q8_0` |
-| OCR | `OCR_LATIN_RECOGNIZER_1` |
-| Translation ID↔EN | `BERGAMOT_ID_EN` + `BERGAMOT_EN_ID` |
-| Vision (photo understanding) | `GEMMA4_4B_MULTIMODAL_Q4_K_M` + `MMPROJ_GEMMA4_4B_MULTIMODAL_F16` |
-| Fine-tune base (QVAC Fabric LoRA) | `QWEN3_600M_INST_Q4` + hand-written set and **real `qvac/GenesisI` medical data** |
+On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia wallets to broadcast for real. By default it prints the signed settlement intent, so it runs **anywhere with no faucet**.
+
+### 3. Pears — P2P pool sync
+
+Pool state syncs between devices over **Hyperswarm** (the real Pears building block, not WebRTC): peers join a shared topic and gossip the pool directly, no server. Each peer holds its own keys, broadcasts a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. Losers then pay the winner directly in USDt from their own wallet.
+
+Run two peers (two terminals or two devices), same pool code:
+
+```bash
+npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY   # proposer
+npm run pool:p2p -- MATCH42 Bob   HOME                 # other player
+```
+
+They discover each other over the Hyperswarm DHT, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer:
+
+```
+📥 Bob staked 10 USDt on HOME  (0x0e0152b7…)
+✍️  Alice co-signed result = AWAY
+📥 Bob co-signed result = AWAY
+🏁 Result AWAY — co-signed 2/2. Pot 20 USDt.
+🏆 Alice wins the 20 USDt pot — paid directly by peers, keys never left the device.
+```
+
+---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Desktop node — i3-12100F · 16 GB · GTX 1660 Super 6 GB   │
-│                                                          │
-│   @qvac/sdk (single API for everything below)            │
-│   ├─ MedPsy-4B (GPU)          — reasoning & answers       │
-│   ├─ Qwen3-1.7B (GPU)         — agent orchestrator+tools  │
-│   ├─ GTE-large (FP16)         — private RAG workspace     │
-│   ├─ OCR · Gemma4 vision      — paper/photo → index       │
-│   ├─ Whisper STT + Supertonic TTS — voice loop            │
-│   ├─ HTTPS :8787 / HTTP :8788 — phone web UI + PWA (SSE)  │
-│   └─ startQVACProvider()      — P2P provider (DHT)        │
-└───────────▲──────────────────────────────▲───────────────┘
-            │ LAN (web UI, streaming)       │ QVAC P2P delegation
-┌───────────┴───────────────┐  ┌───────────┴───────────────┐
-│ Phone (Redmi Note 10 Pro) │  │ Any QVAC client device     │
-│ browser chat / dashboard  │  │ loadModel({ delegate })    │
-└───────────────────────────┘  └───────────────────────────┘
+On-device AI edge        Self-custody stakes         P2P sync
+(QVAC / Qwen3-4B +   →   (WDK: your seed, your   →   (Pears / Hyperswarm:
+ GTE-large, RAG over      key, USDt wallet-to-        peers gossip pool
+ local corpus)            wallet, no house)           state, no server)
 ```
 
-## Hardware (declared for verification)
+Everything runs on the player's device. The AI never phones home, the keys never leave the owner, and the network has no operator in the middle.
 
-| Device | Specs |
-|---|---|
-| Desktop (main, General Purpose track) | Intel Core i3-12100F (4C/8T) · 16 GB DDR4 · NVIDIA GTX 1660 Super 6 GB · 500 GB NVMe SSD · Windows 11 |
-| Phone (web-UI client) | Xiaomi Redmi Note 10 Pro (M2101K6G) · Snapdragon 732G · 8 GB RAM · 128 GB · Android 13 |
+---
 
-Evidence: [`artifacts/hardware/`](artifacts/hardware/) — `msinfo32-report.txt`, `dxdiag-report.txt`,
-`nvidia-smi.txt`, CPU/GPU/OS, and a Task Manager screenshot.
+## Real use of tracks
 
-## Reproducibility
+| Track | Rule | How Gaffer Pool really uses it |
+|-------|------|--------------------------------|
+| **QVAC / Local-AI** | Genuine on-device inference | Qwen3-4B + GTE-large via `@qvac/sdk`, RAG over a local corpus, no cloud/API keys. `npm run demo:analyst`. |
+| **WDK / Wallets** | Self-custodial, real transactions | Per-player seed→EVM wallets, each signs its own stake, settlement is a real USDt ERC-20 `transfer` (`0xa9059cbb…`). `npm run demo:pool`. |
+| **Pears / P2P** | Real P2P building block | Hyperswarm topic gossip for pool state — no server. `npm run pool:p2p`. |
 
-Requirements: Node.js ≥ 22, ~6 GB free disk for models, NVIDIA GPU recommended.
+Combining all three is the Cup Champion angle: one football product, three tracks, no trusted middle.
+
+---
+
+## Setup & run
+
+Requires **Node ≥ 22**. Windows/PowerShell friendly.
 
 ```bash
-git clone https://github.com/PugarHuda/sehat && cd sehat
-npm install                      # flaky network? add --fetch-retries 5
-
-npm run smoke                    # load a model, one completion + audit log
-npm run test:gpu                 # same, GPU-offloaded (expect ~4x speedup)
-npm run demo:rag                 # ingest sample docs, cited cross-doc Q&A
-npm run demo:ocr                 # photo of lab report -> OCR -> RAG -> answer
-npm run demo:voice               # TTS question -> STT -> RAG answer -> TTS wav
-npm run demo:agent               # multi-agent: Qwen orchestrator + tools + MedPsy
-npm run demo:vision              # photo -> local VLM analysis
-npm run demo:translate           # Bahasa Indonesia round-trip via Bergamot
-npm run test:injection           # prompt-injection resistance (expects PASS)
-npm run genesis:prepare          # fetch a sample of QVAC Genesis-I medical data
-npm run demo:finetune:genesis    # LoRA fine-tune on real Genesis data (Fabric)
-npm run demo:finetune            # LoRA fine-tune on the hand-written "Sehat style" set
-npm run profile                  # evidence run with the SDK's own profiler
-node src/qa-suite.js             # 22 end-to-end server tests (server must be up)
-node src/qa-ocr.js               # 13-image OCR sweep (print/handwriting/rotated/Indonesian)
-
-npm start                        # the app: phone UI on https://<ip>:8787 + http://<ip>:8788
-npm run desktop                  # native desktop app (Electron) — same engine, a window
-SEHAT_P2P=1 npm start            # also start the P2P "remote family node"
-npm run delegate <publicKey>     # from another device: delegated inference, no local model
+npm install
+npm run demo:analyst     # QVAC: on-device cited analysis
+npm run demo:pool        # WDK: self-custody stakes + USDt settlement
+npm run pool:p2p         # Pears: peer sync (landing now)
 ```
 
-Optional family PIN: `SEHAT_PIN=2468 npm start` requires that PIN on every API
-call (the app prompts once and remembers it on-device). Default is open — fine on
-a trusted home Wi-Fi, recommended ON if others share the network.
+Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs on a 6 GB GPU (the embedder is placed on CPU for VRAM headroom).
 
-HTTPS: `npm start` serves TLS if `certs/sehat.pfx` exists (needed for the phone mic).
-Generate one with PowerShell `New-SelfSignedCertificate` + `Export-PfxCertificate`
-(passphrase `sehat-lan`), or delete `certs/` to run plain HTTP (mic disabled, chat works).
+Useful env knobs:
 
-First run of each demo downloads its models once (QVAC registry or HuggingFace), then runs
-fully offline. All demo documents are **synthetic** — no real medical data in this repo.
+- `MODEL=medgemma|medpsy` — swap the local LLM.
+- `POOL_ONCHAIN=1` — broadcast settlement on Sepolia (needs funded wallets).
+- `POOL_SEED_A` / `POOL_SEED_B` — stable demo wallets.
+- `POOL_RESULT`, `POOL_USDT`, `POOL_RPC` — set the result, token, and RPC.
 
-### Blind relays (NAT traversal)
+---
 
-QVAC supports blind relays — Hyperswarm relays that bridge P2P across NATs/firewalls — via a
-`QVAC_CONFIG_PATH` config listing `swarmRelays` keys. Sehat's P2P delegation works with this
-unchanged. We did not stand up our own relay infra, so we document the capability rather than
-fake a demo; on a home LAN / direct DHT (our setup) relays aren't needed.
+## Status / what's next
 
-## Artifacts (hackathon evidence bundle)
+- **QVAC analyst** — working. `npm run demo:analyst` verified.
+- **WDK stakes + settlement** — working. `npm run demo:pool` verified; on-chain broadcast is opt-in.
+- **Pears P2P sync** — working. `npm run pool:p2p` verified: two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
+- **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
+- **Desktop/web UI** — the Electron app is inherited on-device infrastructure (a prior health build) still being reskinned; the Cup entry is the CLI trio above.
 
-- [`remote-apis.yaml`](remote-apis.yaml) — every remote call disclosed (no cloud AI)
-- [`NOTICE-genesis.md`](NOTICE-genesis.md) — QVAC Genesis dataset license (CC-BY-NC) disclosure
-- [`artifacts/audit-log.jsonl`](artifacts/audit-log.jsonl) — model loads + per-call prompt/tokens/TTFT/tok-s
-- [`artifacts/qa-report.md`](artifacts/qa-report.md) — 22/22 server cases + 13/13 OCR sweep
-- [`artifacts/medpsy-vs-medgemma.md`](artifacts/medpsy-vs-medgemma.md) — MedPsy vs MedGemma benchmark
-- [`artifacts/qvac-stack-coverage.md`](artifacts/qvac-stack-coverage.md) — which QVAC stack legs we use
-- [`artifacts/hardware/`](artifacts/hardware/) — system profiler reports + screenshot
-- [`artifacts/profiler-export.json`](artifacts/profiler-export.json) — SDK-native profiler export
-- [`docs/DEMO-VIDEO-SCRIPT.md`](docs/DEMO-VIDEO-SCRIPT.md) — 5-minute demo storyboard
-- Demo video: _YouTube unlisted link in the submission form_
+---
 
 ## License
 
-[Apache 2.0](LICENSE) — code. The Genesis-derived demo adapter is CC-BY-NC (see NOTICE-genesis.md).
+Apache-2.0. Public repo, open source. See [`LICENSE`](LICENSE).

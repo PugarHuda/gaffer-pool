@@ -1,7 +1,7 @@
 {
-  "name": "sehat",
+  "name": "gaffer-pool",
   "version": "0.1.0",
-  "description": "Sehat — offline-first family health assistant. RAG over family health documents, voice Q&A with MedPsy-4B, OCR ingestion, and P2P delegated inference to budget phones. 100% on-device via QVAC SDK.",
+  "description": "Gaffer Pool — a football prediction game where the AI analyst, the money, and the network all run on your own device. On-device match analysis (QVAC), self-custodial USDt stakes (WDK), and P2P pool sync over Hyperswarm (Pears). No house, no cloud, your keys.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -11,6 +11,7 @@
     "demo:rag": "node src/demo-rag.js",
     "demo:analyst": "node src/demo-analyst.js",
     "demo:pool": "node src/demo-pool.js",
+    "pool:p2p": "node src/pool-p2p.js",
     "demo:voice": "node src/demo-voice.js",
     "demo:ocr": "node src/ocr-ingest.js",
     "demo:agent": "node src/demo-agent.js",
@@ -30,12 +31,16 @@
   },
   "keywords": [
     "qvac",
+    "wdk",
+    "pears",
+    "hyperswarm",
     "edge-ai",
     "local-ai",
-    "medpsy",
+    "self-custody",
+    "usdt",
     "rag",
     "p2p",
-    "health"
+    "football"
   ],
   "license": "Apache-2.0",
   "engines": {
@@ -45,6 +50,9 @@
     "@qvac/sdk": "^0.13.0",
     "@tetherto/wdk": "^1.0.0-beta.13",
     "@tetherto/wdk-wallet-evm": "^1.0.0-beta.15",
+    "b4a": "^1.8.1",
+    "hypercore-crypto": "^3.7.0",
+    "hyperswarm": "^4.17.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
