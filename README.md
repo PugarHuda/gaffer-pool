@@ -69,9 +69,11 @@ Pool state syncs between devices over **Hyperswarm** (the real Pears building bl
 Run two peers (two terminals or two devices), same pool code:
 
 ```bash
-npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY   # proposer
-npm run pool:p2p -- MATCH42 Bob   HOME                 # other player
+npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY --edge   # proposer
+npm run pool:p2p -- MATCH42 Bob   HOME --edge                 # other player
 ```
+
+With `--edge`, each peer first runs its **own** on-device Gaffer (Qwen3-1.7B on CPU, so two peers share one GPU) and prints its read of the match before staking — so the AI edge lives inside every peer, not on a server.
 
 They discover each other over the Hyperswarm DHT, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer:
 

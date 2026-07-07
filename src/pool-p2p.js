@@ -15,11 +15,13 @@ import crypto from "hypercore-crypto";
 import b4a from "b4a";
 import WDK from "@tetherto/wdk";
 import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
+import { loadModel, completion, QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import { AuditLogger } from "./audit-logger.js";
 
 const [poolCode, name, pick] = process.argv.slice(2);
 const resultFlagIdx = process.argv.indexOf("--result");
 const proposedResult = resultFlagIdx > -1 ? process.argv[resultFlagIdx + 1] : null;
+const wantEdge = process.argv.includes("--edge");
 if (!poolCode || !name || !pick) {
   console.error("Usage: node src/pool-p2p.js <poolCode> <name> <HOME|DRAW|AWAY> [--result <R>]");
   process.exit(1);
@@ -44,12 +46,45 @@ const stakes = new Map();   // address -> { name, address, pick, stake }
 const resultSigs = new Map(); // signer name -> { result, sig }
 let attested = false, settled = false;
 
+// Optional: each peer runs its OWN on-device Gaffer edge before staking. Small
+// model on CPU so two peers can share one GPU. Non-fatal — the pool works without it.
+async function gafferEdge() {
+  const ctx = `Match: Real Madrid vs Manchester City (2nd leg).
+Man City: last-5 W W W D W, xG 12.1, single pivot Rodri available (their build-up depends on him).
+Real Madrid: last-5 W W D W L, xG 9.8, right-back injury doubt, high line — dangerous on the counter via Bellingham.`;
+  const id = await loadModel({
+    modelSrc: QWEN3_1_7B_INST_Q4,
+    modelType: "llm",
+    modelConfig: { gpu_layers: 0, ctx_size: 2048, reasoning_budget: 0, system_prompt: "You are Gaffer, a concise on-device football analyst." },
+  });
+  const res = completion({
+    modelId: id,
+    history: [{ role: "user", content: `${ctx}\n\nIn ONE sentence, which outcome (home win / draw / away win) do you lean to, and why?` }],
+    stream: true,
+  });
+  let raw = ""; for await (const t of res.tokenStream) raw += t;
+  // ponytail: keep the model resident — unloading here tears down the QVAC worker
+  // and interferes with the Hyperswarm init that follows in the same process.
+  return raw.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*?<\/think>/i, "").replace(/<\/?think>/gi, "").trim();
+}
+
 const stakeMsg = () => `Gaffer Pool | ${MATCH} | pick=${pick} | stake=${STAKE} USDt | ${myAddress}`;
 const resultMsg = (r) => `Gaffer Pool RESULT | ${MATCH} | result=${r}`;
 
 console.log(`\n⚽ ${name} joined Gaffer Pool  (${MATCH})`);
 console.log(`   wallet ${myAddress}  ·  pick ${pick} (${OUTCOMES[pick]})  ·  stake ${STAKE} USDt`);
 console.log(`   syncing over Hyperswarm (Pears) — no server…\n`);
+
+if (wantEdge) {
+  try {
+    process.stdout.write("🧠 asking Gaffer on this device (Qwen3-1.7B, CPU)… ");
+    const edge = await gafferEdge();
+    console.log(`\n   Gaffer: ${edge}\n`);
+    log.record({ event: "qvac-edge", player: name, edge });
+  } catch (e) {
+    console.log(`(edge skipped: ${e.message})\n`);
+  }
+}
 
 const swarm = new Hyperswarm();
 const conns = new Set();
@@ -155,4 +190,4 @@ await swarm.flush();
 console.log("🔗 announced on the pool topic — waiting for the other player…");
 
 // Safety: don't hang forever if the peer never shows.
-setTimeout(() => { if (!settled) { console.log("\n⌛ No settlement (peer/result missing). Exiting."); swarm.destroy(); process.exit(0); } }, 60000);
+setTimeout(() => { if (!settled) { console.log("\n⌛ No settlement (peer/result missing). Exiting."); swarm.destroy(); process.exit(0); } }, 120000);
