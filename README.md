@@ -59,6 +59,9 @@ Gaffer also turns its edge into **money**: it estimates each outcome's probabili
 
 On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia wallets to broadcast for real. By default it prints the signed settlement intent, so it runs **anywhere with no faucet**. `npm run pool:wallet` prints the wallets to fund and the exact runbook.
 
+**Verified on-chain (Sepolia):** a real settlement was broadcast from one player's self-custodial WDK wallet to the winner —
+[settlement tx `0xd8fbc0…`](https://sepolia.etherscan.io/tx/0xd8fbc00021589b7ebc425742a0006324514e5d8d2d22aa9c260be5c7e83c3569) (status: success, block 11224060). The WDK key signed and broadcast it; no operator in the middle. (Settled in test ETH here because no faucet test-USDT was available to the payer; the ERC-20 USDt path is identical — same `transfer` calldata, shown above.)
+
 ### 3. Pears — P2P pool sync
 
 Pool state syncs between devices over **Hyperswarm** (the real Pears building block, not WebRTC): peers join a shared topic and gossip the pool directly, no server. Each peer holds its own keys, broadcasts a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. Losers then pay the winner directly in USDt from their own wallet.
@@ -134,7 +137,7 @@ Useful env knobs:
 ## Status / what's next
 
 - **QVAC analyst** — working. `npm run demo:analyst` verified.
-- **WDK stakes + settlement** — working. `npm run demo:pool` verified; on-chain broadcast is opt-in.
+- **WDK stakes + settlement** — working. `npm run demo:pool` verified; a real settlement was broadcast on Sepolia via WDK self-custody ([tx](https://sepolia.etherscan.io/tx/0xd8fbc00021589b7ebc425742a0006324514e5d8d2d22aa9c260be5c7e83c3569)).
 - **Pears P2P sync** — working. `npm run pool:p2p` verified: two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
 - **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
 - **Desktop/web UI** — `npm start` serves the on-device Gaffer chat (football corpus, cited answers) on the LAN; verified. Some deeper panels from the reused infrastructure are hidden pending a fuller reskin.
