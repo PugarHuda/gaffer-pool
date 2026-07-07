@@ -1,8 +1,12 @@
 # Gaffer Pool — Demo Video Script (≤ 3:00)
 
-**Format:** unlisted YouTube, solo builder, screen recording of a terminal. Two-to-three `npm` commands. Voiceover over the terminal — no face needed.
+**Format:** unlisted YouTube, solo builder, screen recording of a terminal. Voiceover over the terminal — no face needed. All output lines below are copied from real verified runs; the numbers are what actually printed on a 6 GB GPU, so quote them honestly (time-to-first-token is a few seconds, not milliseconds — that's on-device reality, and it's fine).
 
-**Prep before recording:** run `npm run demo:analyst` once so models are cached (first run downloads ~2.5 GB and would blow the time budget). Have three terminal tabs ready: analyst, pool, and (if wired) `pool:p2p`. Keep font large.
+**Prep before recording:**
+- Run each command once first so models are cached (first run downloads; would blow the time budget).
+- Terminals ready: **T1** analyst, **T2** pool, **T3 + T4** two P2P peers side by side, **Browser** open to the Sepolia Etherscan tx (below).
+- Large font. For the P2P beat, arrange T3/T4 split-screen so both peers are visible.
+- The real on-chain settlement to show: `https://sepolia.etherscan.io/tx/0xd8fbc00021589b7ebc425742a0006324514e5d8d2d22aa9c260be5c7e83c3569`
 
 ---
 
@@ -10,24 +14,68 @@
 
 | Time | On screen | Narration (voiceover) |
 |------|-----------|-----------------------|
-| **0:00–0:15** | Title card: **"Gaffer Pool — no house, no cloud, your keys."** Then a bare terminal. | "Friends bet on football all the time. But today that means trusting a cloud app with your picks, and a bookmaker with your money. Gaffer Pool needs neither — the AI, the money, and the network all run on your own device." |
-| **0:15–0:20** | Type `npm run demo:analyst`, hit enter. | "First, your private analyst. This is Qwen3-4B and GTE-large embeddings running one hundred percent locally through the QVAC SDK." |
-| **0:20–1:05** | Ingest lines scroll (`Ingesting player-bellingham.txt... ok`), then an answer streams token by token, ending with the stats line `[search … ms | TTFT … ms | … tokens | … tok/s]`. Let one full answer stream. | "It reads a local football corpus — club and player profiles, a match report, tactics — and answers scouting questions grounded in those docs. Watch it stream on-device: time-to-first-token in milliseconds, tokens counted, no network call, no API key. This is your edge, and it never leaves the machine." |
-| **1:05–1:15** | New tab. Type `npm run demo:pool`, enter. | "Now the money. No bookmaker holds the pot. Each player has their own self-custodial wallet — a seed phrase to an EVM account, via Tether's WDK." |
-| **1:15–1:40** | Highlight the two addresses: `Alice  0x…` / `Bob  0x…`, then the signed commitments `Alice: HOME — sig 0x…`. | "Two players, two addresses, two sets of keys — held by their owners, not by any server. Each one signs their own stake commitment with their own key. Nobody signs on their behalf." |
-| **1:40–2:10** | Scroll to the settlement block. Highlight the ERC-20 calldata: `to(token) 0x…  data 0xa9059cbb…` and the closing line "Keys stayed with their owners; nothing left the devices." | "When the result's in, the losers pay the winner directly, wallet to wallet, in USDt. That's a real ERC-20 transfer — there's the calldata, `0xa9059cbb`. No house takes a cut. Flip on the on-chain flag with funded testnet wallets and it broadcasts to Sepolia for real; by default it prints the signed intent so it runs anywhere, no faucet." |
-| **2:10–2:35** | Third tab: `npm run pool:p2p`. Show a peer node starting and a "peer connected" / Hyperswarm topic line. *(If not yet wired, hold on the pool tab and say the line as roadmap.)* | "And the pool itself syncs peer-to-peer — no server in the middle. Devices join a shared Hyperswarm topic and gossip the pool state directly to each other. That's the real Pears building block, coming online now." |
-| **2:35–3:00** | Back to title card, three logos/words: **QVAC · WDK · Pears**. | "So that's Gaffer Pool: your analyst runs on-device with QVAC, your stakes are self-custodial with WDK, and your pool syncs peer-to-peer with Pears. Three Tether tracks, one football product — no house, no cloud, your keys. Thanks for watching." |
+| **0:00–0:12** | Title card: **"Gaffer Pool — no house, no cloud, your keys."** Then a bare terminal. | "Friends predict football all the time. Today that means trusting a cloud app with your picks and a bookmaker with your money. Gaffer Pool needs neither — the AI, the money, and the network all run on your own device." |
+| **0:12–0:55** | **T1:** `npm run demo:analyst`. Let one answer stream, ending on the stats line. Highlight the `[doc: …]` citations and the stats. | "First, your private analyst — Qwen3-4B and GTE-large, one hundred percent local through the QVAC SDK. It reads a local football corpus and answers grounded in it, citing the source doc for every claim. First token in about five seconds, then it streams — on-device, no network, no API key." |
+| **0:55–1:05** | Freeze on the analyst answer + stats. | *(let it breathe — show the cited answer and `TTFT 4559 ms \| 228 tokens \| 24.1 tok/s`)* |
+| **1:05–1:15** | **T2:** `npm run demo:pool`. Highlight the two addresses. | "Now the money. No bookmaker holds the pot. Each player has a self-custodial wallet — a seed phrase to an EVM account, via Tether's WDK." |
+| **1:15–1:35** | Highlight the fair-odds line, then the two signed picks. | "Gaffer turns its read into fair, no-house odds — here it makes City fifty percent, so backing them pays two-x, the underdog five-x. Each player signs their own stake with their own key. Nobody signs for them." |
+| **1:35–1:55** | Scroll to settlement. Highlight `data 0xa9059cbb…`. | "When the result's in, the loser pays the winner directly, wallet to wallet, in USDt — a real ERC-20 transfer, there's the calldata, `0xa9059cbb`. No house takes a cut." |
+| **1:55–2:30** | **T3 + T4 split:** run both peers with `--edge`. Show each peer's own `Gaffer:` line, then `📥 … staked`, `✍️ co-signed`, `🏁 co-signed 2/2`, `🏆 … wins the pot`. | "And the pool syncs peer-to-peer — no server. Each device runs its *own* on-device Gaffer, then they find each other over Hyperswarm — the real Pears building block — swap signed stakes, and co-sign the result two-of-two. No operator decides the outcome. Then they settle, directly." |
+| **2:30–2:50** | **Browser:** the Sepolia Etherscan tx page — **Status: Success**, the value transfer to the winner. | "And this isn't a mock. Here's a real settlement broadcast from a player's own WDK wallet, on-chain on Sepolia — confirmed, no operator in the middle." |
+| **2:50–3:00** | Title card: **QVAC · WDK · Pears**. | "Your analyst on-device with QVAC, your stakes self-custodial with WDK, your pool peer-to-peer with Pears. Three Tether tracks, one football product — no house, no cloud, your keys." |
 
 ---
 
-## Key output lines to make sure land on camera
+## Real output lines to make sure land on camera
 
-- **QVAC:** `[search 41 ms | TTFT 380 ms | 512 tokens | 24.3 tok/s]` — the on-device proof.
-- **WDK addresses:** `Alice  0x…` / `Bob  0x…` — two owners, two keys.
-- **WDK signatures:** `Alice: HOME — sig 0x…` — each signs their own stake.
-- **WDK settlement:** `data 0xa9059cbb…` — real ERC-20 `transfer` calldata.
-- **Pears:** peer-connected line on a shared Hyperswarm topic.
+**QVAC analyst** (`demo:analyst`) — cited, on-device:
+```
+To neutralise Rodri, deploy a forward or advanced 8 to cut the first line of
+build-up [doc: player-rodri.txt] … Real Madrid's Bellingham is a key threat due
+to his timing and runs beyond the striker [doc: player-bellingham.txt].
+[search 358 ms | TTFT 4559 ms | 228 tokens | 24.1 tok/s]
+```
+
+**WDK fair odds + signed stakes** (`demo:pool`):
+```
+📊 Gaffer's fair odds (no house):  HOME 2×  DRAW 3.33×  AWAY 5×
+   (from on-device probabilities HOME 50% / DRAW 30% / AWAY 20%)
+  Alice: AWAY @ 5× (fair payout 50.0 USDt) — sig 0xff78aefe…
+  Bob:   HOME @ 2× (fair payout 20.0 USDt) — sig 0x066d74fb…
+```
+
+**WDK settlement** — real ERC-20 `transfer` calldata:
+```
+🤝 Settlement — losers pay Alice directly (no house):
+  Bob → Alice: 10 USDt
+     to(token) 0x7169…  data 0xa9059cbb0000000000000000…
+```
+
+**Pears + per-peer QVAC** (`pool:p2p … --edge`, two peers):
+```
+🧠 asking Gaffer on this device (Qwen3-1.7B, CPU)…
+   Gaffer: I lean towards a home win for Real Madrid …
+🔗 announced on the pool topic — waiting for the other player…
+📥 Bob staked 10 USDt on HOME  (0xcF2Bd59b…)
+✍️  Alice co-signed result = AWAY
+📥 Bob co-signed result = AWAY
+🏁 Result AWAY (Manchester City win) — co-signed 2/2. Pot 20 USDt.
+🏆 Alice wins the 20 USDt pot — paid directly by peers, keys never left the device.
+```
+
+**Real on-chain proof** (browser): Sepolia Etherscan, tx `0xd8fbc0…`, **Status: Success**, block 11224060 — a WDK self-custody settlement that actually happened.
+
+## Commands (paste-ready)
+```bash
+# T1
+npm run demo:analyst
+# T2
+npm run demo:pool
+# T3 (proposer)
+npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY --edge
+# T4 (other player)
+npm run pool:p2p -- MATCH42 Bob HOME --edge
+```
 
 ## Closing line (verbatim)
 
@@ -35,4 +83,4 @@
 
 ---
 
-*Total spoken words ≈ 290 — comfortably under three minutes at a natural pace. If running long, trim the middle of the streamed analyst answer rather than any track's beat; each track needs its moment on screen.*
+*Spoken words ≈ 300 — comfortable under three minutes at a natural pace. If long, trim the middle of the streamed analyst answer; keep every track's beat and the Etherscan proof. Honesty note: don't claim millisecond latency — TTFT is ~5 s on a 6 GB GPU; the point is it runs on-device at all.*
