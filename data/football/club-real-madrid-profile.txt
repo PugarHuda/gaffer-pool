@@ -1,0 +1,28 @@
+Club: Real Madrid
+Competition: UEFA Champions League / La Liga
+Date: 2026-06-01
+Season: 2025/26
+
+Style of play: Possession-based build-up transitioning to fast vertical
+attacks. Prefers a 4-3-1-2 / 4-4-2 diamond in big matches to overload central
+midfield, with fullbacks providing width. Comfortable ceding possession against
+weaker blocks to spring counters through the front two.
+
+Strengths:
+- Elite transition speed: first 8 seconds after winning the ball are the most
+  dangerous phase, direct balls into the half-spaces.
+- Individual quality in the final third can unlock a settled low block.
+- Set-piece delivery is a repeatable goal source (see set-pieces analysis).
+
+Weaknesses:
+- Midfield can be bypassed by teams that press the first pass aggressively.
+- High defensive line is exposed by pace in behind on the counter.
+- Squad rotation in the fullback areas causes drops in defensive coverage.
+
+Key players: Jude Bellingham (advanced 8 / second striker), Vinicius Jr (left
+wing / inside forward), plus a rotating double pivot.
+
+Recent form (last 5, most recent last): W W D W L
+Goals scored last 5: 11
+Goals conceded last 5: 6
+xG last 5: 9.8

@@ -1,0 +1,26 @@
+Player: Rodri
+Club: Manchester City
+Position: Single pivot / deep-lying playmaker (defensive midfield)
+Date: 2026-06-01
+Season: 2025/26 (all competitions)
+
+Role: The metronome. Receives between the centre-backs, sets tempo, and screens
+the space in front of the back line. City's whole build-up and rest-defence are
+organised around him. When he is off the pitch, expected goal difference drops.
+
+Season stats:
+Appearances: 38
+Goals: 6
+Assists: 5
+xG: 3.2
+xA: 4.8
+Pass completion %: 92
+Progressive passes per 90: 8.7
+Interceptions per 90: 1.6
+Duels won %: 61
+
+Scouting notes:
+- Neutralising Rodri is the single biggest lever against City. Man-mark him with
+  a forward or the advanced 8 to cut the first line of build-up.
+- If pressed off his stronger foot he will still find the switch; angle the press.
+- Reads counters early — direct balls must go beyond him quickly, before he sets.

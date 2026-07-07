@@ -17,6 +17,11 @@ export class AuditLogger {
     );
   }
 
+  // Generic structured event (e.g. wallet-create, stake-commitment, settlement).
+  record(entry) {
+    this.#write(entry);
+  }
+
   modelLoad({ modelSrc, modelType, modelId, durationMs }) {
     this.#write({ event: "model_load", modelSrc, modelType, modelId, durationMs });
   }

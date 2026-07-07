@@ -1,0 +1,27 @@
+Player: Jude Bellingham
+Club: Real Madrid
+Position: Advanced central midfielder / second striker (the "free 8")
+Date: 2026-06-01
+Season: 2025/26 (all competitions)
+
+Role: Arrives late into the box from midfield, the classic "third-man" run.
+Operates between the opposition midfield and defensive lines. Also drops to
+combine in build-up when Madrid need an extra man against a press.
+
+Season stats:
+Appearances: 41
+Goals: 22
+Assists: 9
+xG: 17.4
+xA: 7.1
+Shots per 90: 3.1
+Progressive carries per 90: 5.4
+Key passes per 90: 2.0
+Duels won %: 58
+
+Scouting notes:
+- Best weapon is timing of runs beyond the striker; hard to track for a single
+  pivot. Against Man City, occupy Rodri's screening zone to pull him out.
+- Ball-carrying through the left half-space starts most Madrid chances.
+- Defensively industrious but can leave space vacated when he pushes high;
+  a disciplined opposition 8 can exploit the gap he leaves.

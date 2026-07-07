@@ -1,0 +1,22 @@
+Squad & form update
+Date: 2026-06-10
+Covers: Real Madrid, Manchester City
+
+Real Madrid:
+- Form: W W D W L over last 5 (see club profile).
+- Bellingham: available, in form (22 goals season). No knock reported.
+- Injury concern: first-choice right-back doubtful (hamstring), rotation likely
+  — historically Madrid's defensive coverage drops when the fullbacks rotate.
+- Note: form dipped in the most recent match (a loss); watch the high line.
+
+Manchester City:
+- Form: W W W D W over last 5 — the stronger recent run, xG 12.1.
+- Rodri: available. This is the single most important availability in the tie —
+  City's build-up and rest-defence depend on him.
+- Haaland: fit, sharp (penalty-box output high).
+- Injury concern: one inverted fullback managing a minor issue; backup is less
+  comfortable inverting into midfield, which can weaken the 3-2-5 build-up.
+
+Betting-desk style read (educational, not advice): City in better form and xG;
+Madrid more dangerous in a chaotic, transition-heavy game. If Rodri were to miss,
+the model would swing meaningfully toward Madrid.

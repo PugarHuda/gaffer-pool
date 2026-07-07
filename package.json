@@ -9,6 +9,8 @@
     "test:gpu": "node src/gpu-test.js",
     "test:medgemma": "node src/medgemma-test.js",
     "demo:rag": "node src/demo-rag.js",
+    "demo:analyst": "node src/demo-analyst.js",
+    "demo:pool": "node src/demo-pool.js",
     "demo:voice": "node src/demo-voice.js",
     "demo:ocr": "node src/ocr-ingest.js",
     "demo:agent": "node src/demo-agent.js",
@@ -41,6 +43,8 @@
   },
   "dependencies": {
     "@qvac/sdk": "^0.13.0",
+    "@tetherto/wdk": "^1.0.0-beta.13",
+    "@tetherto/wdk-wallet-evm": "^1.0.0-beta.15",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {

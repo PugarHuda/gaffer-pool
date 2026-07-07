@@ -1,0 +1,28 @@
+Club: Manchester City
+Competition: UEFA Champions League / Premier League
+Date: 2026-06-01
+Season: 2025/26
+
+Style of play: Positional possession (juego de posición). Builds with a back
+three in possession by inverting a fullback into midfield, creating a 3-2-5
+attacking shape. Aims to fix defenders with width from the wingers and attack
+the half-spaces with the "10" and an inverted runner. Immediate counter-press
+(gegenpress) on any turnover in the opposition half.
+
+Strengths:
+- Controls tempo and territory; sustained pressure wears down low blocks.
+- Rodri (or his replacement) as single pivot dictates rhythm and screens counters.
+- Rest-defence structure (2-3 behind the ball) limits transitions conceded.
+
+Weaknesses:
+- If the single pivot is neutralised or injured, build-up quality drops sharply.
+- High line can be exploited by direct balls in behind before the press sets.
+- Can struggle for a "plan B" when a deep block concedes zero space centrally.
+
+Key players: Rodri (single pivot / deep-lying playmaker), Erling Haaland
+(centre-forward / penalty-box finisher), inverted fullbacks.
+
+Recent form (last 5, most recent last): W W W D W
+Goals scored last 5: 13
+Goals conceded last 5: 4
+xG last 5: 12.1
