@@ -7,7 +7,7 @@
 <link rel="manifest" href="/manifest.json" />
 <link rel="icon" href="/icon-192.png" />
 <link rel="apple-touch-icon" href="/icon-192.png" />
-<title>Sehat — Family Health, On-Device</title>
+<title>Gaffer — Football Analyst, On-Device</title>
 <style>
   :root {
     --bg: #eef1ee; --bg-grad: radial-gradient(1100px 520px at 85% -8%, #e3efe9 0%, #eef1ee 60%);
@@ -137,12 +137,13 @@
 </head>
 <body>
 <header>
-  <div class="mark">S</div>
-  <div><h1>Sehat</h1><div class="sub">Family health · on-device</div></div>
+  <div class="mark">G</div>
+  <div><h1>Gaffer</h1><div class="sub">Football analyst · on-device</div></div>
   <button id="profileBtn" class="chip" style="cursor:pointer;border:0">👤 Set name</button>
 </header>
 
-<nav>
+<!-- ponytail: health dashboard/family/alerts nav hidden for the football reskin; views + JS stay wired but unreachable -->
+<nav style="display:none">
   <button class="on" data-view="chatView">💬 Chat</button>
   <button data-view="dashView">📊 Family</button>
   <button data-view="alertView">🔔 Alerts<span id="alertBadge" class="navbadge"></span></button>
@@ -150,9 +151,9 @@
 
 <main>
   <section id="chatView" class="view on"><div id="chat">
-    <div class="hint">Ask about your family's health records, in <b>any language</b>.<br />
-      Answers come from <b>QVAC MedPsy running on the family PC</b> — nothing leaves your home network.<br /><br />
-      Try: <b>"How has Budi's blood sugar changed?"</b> or <b>"Bagaimana tren gula darah Budi?"</b></div>
+    <div class="hint">Ask about <b>teams, players, tactics and matches</b>.<br />
+      Answers run on <b>this device via QVAC</b> — nothing leaves your machine.<br /><br />
+      Try: <b>"How did Real Madrid beat City's low block?"</b> or <b>"Compare Rodri and Bellingham's form."</b></div>
   </div></section>
 
   <section id="dashView" class="view">
@@ -177,7 +178,7 @@
 <form id="f">
   <input type="file" id="attachFile" accept="image/*,.txt" hidden />
   <button type="button" id="attach" class="iconbtn" title="Upload a photo or document">📎</button>
-  <input id="q" placeholder="Ask about the family's health…" autocomplete="off" />
+  <input id="q" placeholder="Ask Gaffer about form, tactics, a matchup…" autocomplete="off" />
   <button type="button" id="mic" class="iconbtn" title="Tap to talk">🎙️</button>
   <button id="send">➤</button>
 </form>
@@ -582,7 +583,7 @@
     if (!file) return;
     $("attachFile").value = "";
     add("user", `📎 ${file.name}`);
-    const bot = add("bot", "Reading on the family PC…", { save: false });
+    const bot = add("bot", "Reading on this device…", { save: false });
     try {
       const me = ME ? `&member=${encodeURIComponent(ME)}&relation=self` : "";
       let j;
@@ -593,7 +594,7 @@
         j = await (await fetch("/api/ingest", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ source: file.name, text, member: ME || undefined, relation: ME ? "self" : undefined }) })).json();
       }
       if (!j.ok) throw new Error(j.error);
-      bot.textContent = `✅ Added to records${j.member ? " for " + j.member : ""}. Ask me anything about it.`;
+      bot.textContent = `✅ Added to the corpus. Ask me anything about it.`;
       persist("bot", bot.textContent);
     } catch (e) { bot.textContent = "⚠️ " + e.message; persist("bot", bot.textContent); }
   };
@@ -637,7 +638,7 @@
     });
     es.addEventListener("error", () => {
       if (text) persist("bot", text);
-      else bot.textContent = "⚠️ Connection error — is the Sehat server running?";
+      else bot.textContent = "⚠️ Connection error — is the Gaffer server running?";
       es.close(); endStream();
     });
   });
@@ -658,7 +659,7 @@
   async function startRec(){const stream=await navigator.mediaDevices.getUserMedia({audio:true});const ctx=new AudioContext({sampleRate:16000});const sn=ctx.createMediaStreamSource(stream);const pr=ctx.createScriptProcessor(4096,1,1);const parts=[];pr.onaudioprocess=(e)=>parts.push(new Float32Array(e.inputBuffer.getChannelData(0)));sn.connect(pr);pr.connect(ctx.destination);mic.classList.add("rec");mic.textContent="⏹";rec={stream,ctx,pr,parts};}
   async function stopRec(){const{stream,ctx,pr,parts}=rec;rec=null;pr.disconnect();stream.getTracks().forEach(t=>t.stop());const rate=ctx.sampleRate;await ctx.close();mic.classList.remove("rec");mic.textContent="🎙️";
     const total=parts.reduce((s,p)=>s+p.length,0);const all=new Float32Array(total);let off=0;for(const p of parts){all.set(p,off);off+=p.length;}
-    input.placeholder="Transcribing…";try{const{text,error}=await(await fetch("/api/voice",{method:"POST",body:encodeWav(all,rate)})).json();if(error)throw new Error(error);input.value=text;if(text){window.__voiceMode=true;form.requestSubmit();}}catch(e){add("bot","⚠️ Voice failed: "+e.message);}finally{input.placeholder="Ask about the family's health…";}}
+    input.placeholder="Transcribing…";try{const{text,error}=await(await fetch("/api/voice",{method:"POST",body:encodeWav(all,rate)})).json();if(error)throw new Error(error);input.value=text;if(text){window.__voiceMode=true;form.requestSubmit();}}catch(e){add("bot","⚠️ Voice failed: "+e.message);}finally{input.placeholder="Ask Gaffer about form, tactics, a matchup…";}}
   mic.addEventListener("click", async () => { try { if (rec) await stopRec(); else await startRec(); } catch (e) { add("bot", "⚠️ Mic needs HTTPS (use the https link): " + e.message); } });
 </script>
 </body>

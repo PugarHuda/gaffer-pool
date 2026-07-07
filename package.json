@@ -12,6 +12,7 @@
     "demo:analyst": "node src/demo-analyst.js",
     "demo:pool": "node src/demo-pool.js",
     "pool:p2p": "node src/pool-p2p.js",
+    "pool:wallet": "node src/pool-wallet.js",
     "demo:voice": "node src/demo-voice.js",
     "demo:ocr": "node src/ocr-ingest.js",
     "demo:agent": "node src/demo-agent.js",

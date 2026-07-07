@@ -23,6 +23,16 @@ const USDT_DECIMALS = 6;
 const STAKE = 10; // USDt each
 const units = (n) => BigInt(Math.round(n * 10 ** USDT_DECIMALS)).toString();
 
+// Turn Gaffer's free-text probability estimate into normalized {HOME,DRAW,AWAY}
+// fractions. Falls back to even odds if the model doesn't answer in format.
+function parseProbs(text) {
+  const g = (k) => { const m = new RegExp(`${k}\\s*=?\\s*(\\d{1,3})\\s*%`, "i").exec(text); return m ? +m[1] : null; };
+  let p = { HOME: g("HOME"), DRAW: g("DRAW"), AWAY: g("AWAY") };
+  const sum = (p.HOME ?? 0) + (p.DRAW ?? 0) + (p.AWAY ?? 0);
+  if (!sum || Object.values(p).some((v) => v == null)) return { HOME: 1 / 3, DRAW: 1 / 3, AWAY: 1 / 3 };
+  return { HOME: p.HOME / sum, DRAW: p.DRAW / sum, AWAY: p.AWAY / sum };
+}
+
 // --- 1. Two self-custodial players (WDK). Each holds their own keys. ---
 async function makePlayer(name, seedEnv) {
   const seed = process.env[seedEnv] || WDK.getRandomSeedPhrase();
@@ -59,6 +69,15 @@ async function main() {
   const { answer, stats } = await engine.ask(q, { onToken: (t) => process.stdout.write(t) });
   console.log(`\n\n[on-device: TTFT ${stats.ttftMs} ms | ${stats.tokenCount} tokens]`);
   log.record({ event: "qvac-analysis", match: MATCH, question: q, answer, ttftMs: stats.ttftMs });
+
+  // AI -> money: quantify the edge as probabilities, then fair (no-house) odds.
+  const probsQ = "Estimate the probability of each outcome for this match as three integer percentages that sum to 100. Reply with EXACTLY this one line, nothing else: HOME=<n>% DRAW=<n>% AWAY=<n>%";
+  const { answer: probsAns } = await engine.ask(probsQ, {});
+  const probs = parseProbs(probsAns);
+  const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / v).toFixed(2)]));
+  console.log(`\n📊 Gaffer's fair odds (no house):  HOME ${odds.HOME}×  DRAW ${odds.DRAW}×  AWAY ${odds.AWAY}×`);
+  console.log(`   (from on-device probabilities HOME ${(probs.HOME * 100).toFixed(0)}% / DRAW ${(probs.DRAW * 100).toFixed(0)}% / AWAY ${(probs.AWAY * 100).toFixed(0)}%)`);
+  log.record({ event: "qvac-odds", match: MATCH, probs, odds });
   await engine.stop();
 
   // --- 3. Each player picks and SIGNS their stake with their own key. ---
@@ -72,8 +91,9 @@ async function main() {
     const commitment = `Gaffer Pool | ${MATCH} | pick=${p.outcome} (${OUTCOMES[p.outcome]}) | stake=${STAKE} USDt | ${p.player.address}`;
     const signature = await p.player.account.sign(commitment);
     p.signature = signature;
-    console.log(`  ${p.player.name}: ${p.outcome} — sig ${String(signature).slice(0, 24)}…`);
-    log.record({ event: "stake-commitment", player: p.player.name, outcome: p.outcome, stakeUsdt: STAKE, signature });
+    const fairPayout = (STAKE * odds[p.outcome]).toFixed(1);
+    console.log(`  ${p.player.name}: ${p.outcome} @ ${odds[p.outcome]}× (fair payout ${fairPayout} USDt) — sig ${String(signature).slice(0, 24)}…`);
+    log.record({ event: "stake-commitment", player: p.player.name, outcome: p.outcome, stakeUsdt: STAKE, odds: odds[p.outcome], signature });
   }
 
   // --- 4. Result → winner takes the pot. ---

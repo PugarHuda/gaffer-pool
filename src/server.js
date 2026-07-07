@@ -20,17 +20,17 @@ import { wavHeader, int16ToBuffer } from "./audio-utils.js";
 const PORT = Number(process.env.PORT ?? 8787);
 const engine = new SehatEngine();
 
-console.log("Starting Sehat engine (QVAC MedPsy-4B GPU + EmbeddingGemma)...");
+console.log("Starting Gaffer engine (Qwen3-4B + GTE-large, on-device)...");
 await engine.start();
 
 // Seed the workspace from the sample docs if it's empty (first run).
-const probe = await engine.ask("vaccination", { topK: 1, onToken: () => {} }).catch(() => null);
+const probe = await engine.ask("tactics", { topK: 1, onToken: () => {} }).catch(() => null);
 if (!probe || probe.hits.length === 0) {
-  console.log("Workspace empty — ingesting sample documents...");
-  for (const f of readdirSync("data/sample").filter((x) => x.endsWith(".txt"))) {
+  console.log("Workspace empty — ingesting football documents...");
+  for (const f of readdirSync("data/football").filter((x) => x.endsWith(".txt"))) {
     await engine.ingestDocument({
       source: basename(f),
-      text: readFileSync(join("data/sample", f), "utf8"),
+      text: readFileSync(join("data/football", f), "utf8"),
     });
   }
   await engine.reindex(); // IVF rebalance for more accurate retrieval
@@ -541,7 +541,7 @@ if (useTls) {
   createHttpServer(handler).listen(PORT, "0.0.0.0");
 }
 
-console.log("\n=== Sehat is up ===");
+console.log("\n=== Gaffer is up ===");
 for (const ip of lanIps()) {
   if (useTls) {
     console.log(`Phone (full, mic):   https://${ip}:${PORT}   (accept the cert warning once)`);

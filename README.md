@@ -55,7 +55,9 @@ Bob    0x…
      to(token) 0x…  data 0xa9059cbb…
 ```
 
-On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia wallets to broadcast for real. By default it prints the signed settlement intent, so it runs **anywhere with no faucet**.
+Gaffer also turns its edge into **money**: it estimates each outcome's probability on-device and the pool shows the **fair, no-house odds** (e.g. `AWAY 5×`), so a pick's payout reflects the AI's read.
+
+On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia wallets to broadcast for real. By default it prints the signed settlement intent, so it runs **anywhere with no faucet**. `npm run pool:wallet` prints the wallets to fund and the exact runbook.
 
 ### 3. Pears — P2P pool sync
 
@@ -112,8 +114,10 @@ Requires **Node ≥ 22**. Windows/PowerShell friendly.
 ```bash
 npm install
 npm run demo:analyst     # QVAC: on-device cited analysis
-npm run demo:pool        # WDK: self-custody stakes + USDt settlement
-npm run pool:p2p         # Pears: peer sync (landing now)
+npm run demo:pool        # WDK: self-custody stakes, AI fair-odds + USDt settlement
+npm run pool:p2p -- <code> <name> <HOME|DRAW|AWAY> [--result R]   # Pears: peer sync
+npm run pool:wallet      # print wallets to fund + on-chain runbook
+npm start                # on-device Gaffer chat web UI (https://localhost:8787)
 ```
 
 Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs on a 6 GB GPU (the embedder is placed on CPU for VRAM headroom).
@@ -133,7 +137,7 @@ Useful env knobs:
 - **WDK stakes + settlement** — working. `npm run demo:pool` verified; on-chain broadcast is opt-in.
 - **Pears P2P sync** — working. `npm run pool:p2p` verified: two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
 - **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
-- **Desktop/web UI** — the Electron app is inherited on-device infrastructure (a prior health build) still being reskinned; the Cup entry is the CLI trio above.
+- **Desktop/web UI** — `npm start` serves the on-device Gaffer chat (football corpus, cited answers) on the LAN; verified. Some deeper panels from the reused infrastructure are hidden pending a fuller reskin.
 
 ---
 
