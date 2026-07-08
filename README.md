@@ -113,6 +113,18 @@ Combining all three is the Cup Champion angle: one football product, three track
 
 ---
 
+## Verify it yourself
+
+- **Repo:** https://github.com/PugarHuda/gaffer-pool (Apache-2.0)
+- **On-chain USDt settlements (Sepolia Etherscan), broadcast by the WDK self-custody keys:**
+  - Odds-driven back/lay, **40 USDt at 5×** → [tx `0x328726…`](https://sepolia.etherscan.io/tx/0x32872699055513e9eed579cfb667bae1634129ae9261bab174984f1387ad96b4)
+  - Earlier flat settlement → [tx `0xf11cdb…`](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc)
+- **Test USDt token** (6 decimals, public mint): [`0xd7e2Bc5F…198e6B`](https://sepolia.etherscan.io/token/0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B)
+- **Player wallets** (watch the USDt balances move): [Alice](https://sepolia.etherscan.io/address/0x2A6a252a5749D540Cc467F1c02A211195219693B) · [Bob](https://sepolia.etherscan.io/address/0x5c80386B03E0ef74634cCEDe55c0440275b3A268)
+- **Docs:** [submission writeup](docs/CUP-SUBMISSION.md) · [demo video script](docs/CUP-DEMO-VIDEO-SCRIPT.md)
+
+---
+
 ## Setup & run
 
 Requires **Node ≥ 22**. Windows/PowerShell friendly.
