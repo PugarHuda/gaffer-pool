@@ -47,6 +47,22 @@ async function makePlayer(name, seedEnv) {
 const MATCH = "Real Madrid vs Manchester City — Champions League 2nd leg";
 const OUTCOMES = { HOME: "Real Madrid win", DRAW: "Draw", AWAY: "Manchester City win" };
 
+// Trustless settlement: `from` pays `to` `amountUsdt` directly in USDt via WDK.
+// Broadcasts on Sepolia when POOL_ONCHAIN=1, else prints the signed intent.
+async function settle(from, to, amountUsdt) {
+  const opts = { token: USDT, recipient: to.address, amount: units(amountUsdt) };
+  if (process.env.POOL_ONCHAIN === "1") {
+    const tx = await from.account.transfer(opts);
+    console.log(`🤝 ${from.name} → ${to.name}: ${amountUsdt} USDt, tx ${tx?.hash ?? tx}`);
+    log.record({ event: "settlement", from: from.name, to: to.name, usdt: amountUsdt, tx: tx?.hash ?? String(tx), onchain: true });
+  } else {
+    const tx = await WalletAccountEvm._getTransferTransaction(opts);
+    console.log(`🤝 ${from.name} → ${to.name}: ${amountUsdt} USDt — signed ERC-20 transfer:`);
+    console.log(`     to(token) ${tx.to}  data ${tx.data.slice(0, 26)}…  (POOL_ONCHAIN=1 to broadcast)`);
+    log.record({ event: "settlement", from: from.name, to: to.name, usdt: amountUsdt, tokenTx: tx, onchain: false });
+  }
+}
+
 async function main() {
   console.log(`\n⚽ Gaffer Pool — ${MATCH}`);
   console.log("   QVAC (on-device AI edge) + WDK (self-custody USDt) — no house, no cloud.\n");
@@ -80,57 +96,42 @@ async function main() {
   log.record({ event: "qvac-odds", match: MATCH, probs, odds });
   await engine.stop();
 
-  // --- 3. Each player picks and SIGNS their stake with their own key. ---
-  // Alice trusts the analyst (away/City); Bob takes the home side.
-  const picks = [
-    { player: alice, outcome: "AWAY" },
-    { player: bob, outcome: "HOME" },
-  ];
-  console.log(`\n💸 Each stakes ${STAKE} USDt and signs the commitment with their own key:\n`);
-  for (const p of picks) {
-    const commitment = `Gaffer Pool | ${MATCH} | pick=${p.outcome} (${OUTCOMES[p.outcome]}) | stake=${STAKE} USDt | ${p.player.address}`;
-    const signature = await p.player.account.sign(commitment);
-    p.signature = signature;
-    const fairPayout = (STAKE * odds[p.outcome]).toFixed(1);
-    console.log(`  ${p.player.name}: ${p.outcome} @ ${odds[p.outcome]}× (fair payout ${fairPayout} USDt) — sig ${String(signature).slice(0, 24)}…`);
-    log.record({ event: "stake-commitment", player: p.player.name, outcome: p.outcome, stakeUsdt: STAKE, odds: odds[p.outcome], signature });
+  // --- 3. A fixed-odds bet at Gaffer's fair price — this is where the AI edge
+  //     drives the money. Alice BACKS the analyst's favourite; Bob LAYS it. The
+  //     odds set the stakes: the layer escrows the liability = stake × (odds−1),
+  //     so a winning back pays out stake × odds. ---
+  const backer = alice, layer = bob;
+  const backed = "AWAY";                             // Alice backs the analyst's read
+  const price = odds[backed];                        // Gaffer's fair odds (e.g. 5×)
+  const liability = +(STAKE * (price - 1)).toFixed(2); // the layer's exposure
+  const payout = +(STAKE * price).toFixed(2);        // the backer's return if it hits
+  assert(Math.abs(STAKE + liability - payout) < 1e-6, "payout = stake + liability");
+
+  console.log(`\n💸 A fixed-odds bet on ${backed} (${OUTCOMES[backed]}) at Gaffer's ${price}× — each side signs:\n`);
+  for (const [who, role, note] of [
+    [backer, "backs", `stakes ${STAKE} USDt to win ${payout} USDt`],
+    [layer, "lays ", `escrows ${liability} USDt against it`],
+  ]) {
+    const commitment = `Gaffer Pool | ${MATCH} | ${role.trim()} ${backed} @ ${price}x | ${who.address}`;
+    who.signature = await who.account.sign(commitment);
+    console.log(`  ${who.name} ${role} ${backed} @ ${price}× — ${note}  · sig ${String(who.signature).slice(0, 20)}…`);
+    log.record({ event: "bet-commitment", player: who.name, role: role.trim(), outcome: backed, odds: price, stakeUsdt: STAKE, liabilityUsdt: role.trim() === "lays" ? liability : null, signature: who.signature });
   }
 
-  // --- 4. Result → winner takes the pot. ---
+  // --- 4. Result decides who pays whom; the ODDS decide how much. ---
   const result = process.env.POOL_RESULT || "AWAY";
-  const winners = picks.filter((p) => p.outcome === result);
-  const losers = picks.filter((p) => p.outcome !== result);
-  const pot = picks.length * STAKE;
-  console.log(`\n🏁 Result: ${result} (${OUTCOMES[result]}). Pot = ${pot} USDt.`);
-  assert(winners.length + losers.length === picks.length);
+  const backerWins = result === backed;
+  const from = backerWins ? layer : backer;
+  const to = backerWins ? backer : layer;
+  const amount = backerWins ? liability : STAKE;    // odds-driven when the back wins
+  console.log(`\n🏁 Result: ${result} (${OUTCOMES[result]}). ${to.name} wins the bet — collects ${backerWins ? `${payout} USDt (stake ${STAKE} + ${liability} at ${price}×)` : `${STAKE} USDt`}.`);
 
-  if (!winners.length) {
-    console.log("No winner this round — stakes roll over.");
-    return;
-  }
-  const winner = winners[0].player;
-  const share = pot / winners.length;
-
-  // --- 5. Trustless settlement: losers pay the winner directly in USDt. ---
-  //     No escrow, no operator — a real WDK-built ERC-20 transfer per loser.
-  console.log(`\n🤝 Settlement — losers pay ${winner.name} directly (no house):`);
-  for (const l of losers) {
-    const opts = { token: USDT, recipient: winner.address, amount: units(STAKE) };
-    if (process.env.POOL_ONCHAIN === "1") {
-      const tx = await l.player.account.transfer(opts); // broadcasts on Sepolia
-      console.log(`  ${l.player.name} → ${winner.name}: ${STAKE} USDt, tx ${tx?.hash ?? tx}`);
-      log.record({ event: "settlement", from: l.player.name, to: winner.name, usdt: STAKE, tx: tx?.hash ?? String(tx), onchain: true });
-    } else {
-      // Build the exact ERC-20 transfer this wallet would sign & broadcast.
-      const tx = await WalletAccountEvm._getTransferTransaction(opts);
-      console.log(`  ${l.player.name} → ${winner.name}: ${STAKE} USDt`);
-      console.log(`     to(token) ${tx.to}  data ${tx.data.slice(0, 26)}…`);
-      log.record({ event: "settlement", from: l.player.name, to: winner.name, usdt: STAKE, tokenTx: tx, onchain: false });
-    }
-  }
-  console.log(`\n✅ ${winner.name} wins ${share} USDt. Keys stayed with their owners; nothing left the devices.`);
+  // --- 5. Trustless settlement: the loser pays the winner directly in USDt. ---
+  console.log(`\n🤝 Settlement (no house):`);
+  await settle(from, to, amount);
+  console.log(`\n✅ Bet settled at Gaffer's odds — keys stayed with their owners, nothing left the devices.`);
   console.log("   (Set POOL_ONCHAIN=1 with funded Sepolia wallets to broadcast for real.)\n");
-  log.record({ event: "pool-settled", winner: winner.name, potUsdt: pot });
+  log.record({ event: "bet-settled", winner: to.name, amountUsdt: amount, odds: price });
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
