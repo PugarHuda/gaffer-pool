@@ -86,12 +86,13 @@ export class GafferAgent {
         ? hits.slice(0, 2).map((h) => h.content.slice(0, 360)).join("\n---\n")
         : "No matching documents.";
     } else if (call.name === "calculate_change") {
-      const { metric, old_value, new_value } = call.arguments;
+      const old_value = Number(call.arguments.old_value), new_value = Number(call.arguments.new_value);
+      const { metric } = call.arguments;
       const abs = new_value - old_value;
-      const pct = old_value !== 0 ? (abs / old_value) * 100 : NaN;
+      const pctStr = old_value !== 0 ? `${((abs / old_value) * 100).toFixed(1)}%` : "n/a (from 0)";
       result =
         `${metric}: ${old_value} -> ${new_value}. ` +
-        `Absolute change: ${abs.toFixed(2)}. Percentage change: ${pct.toFixed(1)}%. ` +
+        `Absolute change: ${abs.toFixed(2)}. Percentage change: ${pctStr}. ` +
         `Direction: ${abs < 0 ? "decrease" : abs > 0 ? "increase" : "no change"}.`;
     } else {
       result = `Unknown tool: ${call.name}`;

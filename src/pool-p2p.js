@@ -154,8 +154,9 @@ async function maybeSettle(result) {
   const sigs = [...resultSigs.values()];
   const agreed = sigs.length >= 2 && sigs.every((s) => s.result === result);
   if (stakes.size < 2 || !agreed) return;
-  settled = true;
-  await persist({ t: "settled", by: name });   // durable marker: never re-settle after a restart
+  settled = true;   // in-memory re-entry guard; the DURABLE marker is written only
+                    // after we actually settle below (so a failed transfer or a
+                    // voided bet is recoverable — no false "already settled").
 
   // A fixed-odds bet: one back + one lay on the same outcome & odds. The odds
   // set the money — a winning back is paid the layer's liability = stake×(odds−1).
@@ -192,6 +193,7 @@ async function maybeSettle(result) {
   } else {
     console.log(`🏆 ${winner.name} wins ${amount} USDt from ${loser.name} at Gaffer's ${price}× — paid directly, keys never left the device.`);
   }
+  await persist({ t: "settled", by: name });   // durable marker only AFTER settling
   finish();
 }
 
@@ -217,6 +219,10 @@ swarm.on("connection", async (conn) => {
       if (!line.trim()) continue;
       let msg; try { msg = JSON.parse(line); } catch { continue; }
 
+      if (msg.t === "stake" && msg.address === myAddress && msg.name !== name) {
+        console.warn(`⚠ ${msg.name} shares your wallet address — give each player a distinct POOL_SEED_*.`);
+        continue;
+      }
       if (msg.t === "stake" && !stakes.has(msg.address)) {
         stakes.set(msg.address, { name: msg.name, address: msg.address, role: msg.role, outcome: msg.outcome, odds: msg.odds, stake: msg.stake });
         await persist(msg);            // record the peer's signed stake on disk
