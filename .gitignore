@@ -35,5 +35,4 @@ artifacts/finetune/checkpoints/
 artifacts/finetune-genesis/checkpoints/
 data/genesis-sample.txt
 data/records/
--w
 .gaffer-pool/

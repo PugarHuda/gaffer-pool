@@ -92,7 +92,8 @@ async function main() {
   const probsQ = "Estimate the probability of each outcome for this match as three integer percentages that sum to 100. Reply with EXACTLY this one line, nothing else: HOME=<n>% DRAW=<n>% AWAY=<n>%";
   const { answer: probsAns } = await engine.ask(probsQ, {});
   const probs = parseProbs(probsAns);
-  const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / v).toFixed(2)]));
+  // Floor the probability so a 0% estimate can't produce Infinity odds (cap ~100×).
+  const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / Math.max(v, 0.01)).toFixed(2)]));
   console.log(`\n📊 Gaffer's fair odds (no house):  HOME ${odds.HOME}×  DRAW ${odds.DRAW}×  AWAY ${odds.AWAY}×`);
   console.log(`   (from on-device probabilities HOME ${(probs.HOME * 100).toFixed(0)}% / DRAW ${(probs.DRAW * 100).toFixed(0)}% / AWAY ${(probs.AWAY * 100).toFixed(0)}%)`);
   log.record({ event: "qvac-odds", match: MATCH, probs, odds });

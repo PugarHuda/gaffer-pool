@@ -310,7 +310,7 @@ async function handler(req, res) {
       .then(async () => {
         const { answer } = await engine.ask(probsQ, {});
         const probs = parseProbs(answer);
-        const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / v).toFixed(2)]));
+        const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / Math.max(v, 0.01)).toFixed(2)]));
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify({ match: "Real Madrid vs Manchester City — 2nd leg", probs, odds }));
       })

@@ -58,7 +58,9 @@ export class GafferAgent {
         ctx_size: 8192, // headroom for multi-tool loops (tool results accumulate)
         tools: true,
         toolsMode: "dynamic",
-        gpu_layers: 99,
+        // ponytail: CPU orchestrator — the base Qwen3-4B + GTE-large already fill
+        // the 6 GB GPU, so a second GPU model here would OOM the Bare worker.
+        gpu_layers: 0,
         reasoning_budget: 0,
       },
     });

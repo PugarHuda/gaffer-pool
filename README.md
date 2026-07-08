@@ -138,7 +138,7 @@ Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs 
 
 Useful env knobs:
 
-- `MODEL=medgemma|medpsy` — swap the local LLM.
+- `GAFFER_GPU_LAYERS=0` — run the LLM on CPU (no/low GPU).
 - `POOL_ONCHAIN=1` — broadcast settlement on Sepolia (needs funded wallets).
 - `POOL_SEED_A` / `POOL_SEED_B` — stable demo wallets.
 - `POOL_RESULT`, `POOL_USDT`, `POOL_RPC` — set the result, token, and RPC.
