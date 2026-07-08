@@ -120,6 +120,26 @@
   .alert .t { font-size: 14.5px; font-weight: 700; } .alert .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .loading { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
 
+  /* football standings */
+  .tablewrap { margin: 12px 14px; overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  table.stand { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.stand th, table.stand td { padding: 10px 8px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.stand tr:last-child td { border-bottom: 0; }
+  table.stand th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 800; }
+  table.stand td.team, table.stand th.team { text-align: left; font-weight: 800; padding-left: 14px; }
+  table.stand td.pos { color: var(--faint); font-weight: 800; }
+  .fp { display: inline-block; width: 19px; height: 19px; line-height: 19px; border-radius: 6px; font-size: 10.5px; font-weight: 800; color: #fff; margin-right: 3px; text-align: center; }
+  .fp.W { background: var(--brand); } .fp.D { background: var(--amber); } .fp.L { background: var(--rose); }
+  .player { display: flex; align-items: center; gap: 11px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .player:last-child { border-bottom: 0; }
+  .player .rk { width: 20px; text-align: center; color: var(--faint); font-weight: 800; font-size: 13px; }
+  .player .pn { font-weight: 800; font-size: 14.5px; }
+  .player .pc { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .player .pv { margin-left: auto; font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; }
+  .player .pv b { color: var(--ink); font-size: 15px; }
+  .injury { display: flex; gap: 10px; padding: 9px 0; font-size: 13px; line-height: 1.5; align-items: flex-start; border-bottom: 1px solid var(--line); }
+  .injury:last-child { border-bottom: 0; }
+
   /* modal form */
   .modal-bg { position: fixed; inset: 0; background: rgba(16,40,34,.34); display: none; z-index: 60; align-items: flex-end; }
   .modal-bg.on { display: flex; }
@@ -142,11 +162,9 @@
   <button id="profileBtn" class="chip" style="cursor:pointer;border:0">👤 Set name</button>
 </header>
 
-<!-- ponytail: health dashboard/family/alerts nav hidden for the football reskin; views + JS stay wired but unreachable -->
-<nav style="display:none">
+<nav>
   <button class="on" data-view="chatView">💬 Chat</button>
-  <button data-view="dashView">📊 Family</button>
-  <button data-view="alertView">🔔 Alerts<span id="alertBadge" class="navbadge"></span></button>
+  <button data-view="dashView">📊 Table</button>
 </nav>
 
 <main>
@@ -157,16 +175,12 @@
   </div></section>
 
   <section id="dashView" class="view">
-    <div class="sectionhead"><h2>Family members</h2>
-      <button id="inviteBtn" style="margin-left:auto;margin-right:8px">🔗 Invite</button>
-      <button id="addBtn" style="margin-left:0">＋ Add</button></div>
-    <div id="reminders"></div>
-    <div id="dash" class="grid"><div class="loading">Loading…</div></div>
-  </section>
-
-  <section id="alertView" class="view">
-    <div id="briefingBox"></div>
-    <div id="alerts" class="grid"></div>
+    <div class="sectionhead"><h2>📊 Standings</h2>
+      <span class="msub" style="margin-left:auto">form &amp; xG over last 5 · on-device</span></div>
+    <div id="standings" class="tablewrap"><div class="loading">Loading…</div></div>
+    <div class="sectionhead"><h2>⚽ Top players</h2></div>
+    <div id="players" class="grid"></div>
+    <div id="injuries"></div>
   </section>
 </main>
 
@@ -182,50 +196,6 @@
   <button type="button" id="mic" class="iconbtn" title="Tap to talk">🎙️</button>
   <button id="send">➤</button>
 </form>
-
-<!-- member detail drawer -->
-<div class="drawer-bg" id="drawerBg"></div>
-<div class="drawer" id="drawer">
-  <div class="grip"></div>
-  <div class="dh"><div class="avatar" id="dAvatar">🙂</div>
-    <div><div class="mname" id="dName">—</div><div class="msub" id="dSub"></div></div>
-    <button class="x" id="dClose">×</button></div>
-  <div id="dBody"></div>
-</div>
-
-<!-- invite modal -->
-<div class="modal-bg" id="inviteBg"><div class="modal">
-  <h3>Invite your family</h3>
-  <p>Anyone on the same Wi-Fi can open this link to chat and add their own records — everything syncs to this PC in real time. No accounts, no cloud.</p>
-  <label>Open on their phone</label>
-  <input id="joinUrl" readonly value="…" style="font-weight:700" />
-  <div id="inviteMsg" style="font-size:12.5px;color:var(--muted);margin-top:8px;white-space:pre-line"></div>
-  <div class="row"><button class="btn-ghost" id="iClose">Close</button>
-    <button class="btn-primary" id="iCopy">Copy link</button></div>
-</div></div>
-
-<!-- add member modal -->
-<div class="modal-bg" id="modalBg"><div class="modal">
-  <h3>Add member or record</h3>
-  <p>Paste a lab result, prescription, or note. A new name creates a new family member. Everything stays on this PC.</p>
-  <label>Who is this for?</label>
-  <select id="fRelation"><option value="family">A family member</option><option value="self">Me (myself)</option></select>
-  <label>Name</label>
-  <input id="fMember" placeholder="e.g. Agus Santoso" />
-  <label>Record name</label>
-  <input id="fSource" placeholder="e.g. lab-agus-2026-06.txt" />
-  <label>Record text</label>
-  <textarea id="fText" rows="5" placeholder="Patient: Agus Santoso&#10;Date: 2026-06-10&#10;Fasting glucose: 110 mg/dL&#10;Blood pressure: 142/90 mmHg"></textarea>
-  <label style="margin-top:14px">…or upload a photo / document (OCR)</label>
-  <p style="margin:2px 0 6px">A photo of a lab result, prescription, or note — read on-device and added.</p>
-  <input type="file" id="fImage" accept="image/*" capture="environment" />
-  <label style="margin-top:12px">…or import a CSV of readings</label>
-  <p style="margin:2px 0 6px">Rows: <code>date,metric,value</code> — metric = glucose / hba1c / ldl / chol / bp. e.g. <code>2026-06-01,glucose,98</code></p>
-  <input type="file" id="fCsv" accept=".csv,text/csv" />
-  <div id="formMsg"></div>
-  <div class="row"><button class="btn-ghost" id="fCancel">Cancel</button>
-    <button class="btn-primary" id="fSave">Save to family records</button></div>
-</div></div>
 
 <!-- generic prompt modal (Electron has no window.prompt) -->
 <div class="modal-bg" id="promptBg"><div class="modal">
@@ -276,7 +246,7 @@
     for (let i = 0; i < 5; i++) {
       const r = await _fetch(_addPin("/api/info")).catch(() => null);
       if (!r || r.status !== 401) return;
-      const p = await askPrompt("Family PIN", { desc: "Enter the PIN to access Sehat on this device." });
+      const p = await askPrompt("Access PIN", { desc: "Enter the PIN to access Gaffer on this device." });
       if (!p) return;
       PIN = p.trim(); localStorage.setItem("sehat-pin", PIN);
     }
@@ -287,31 +257,9 @@
   function renderProfile() { $("profileBtn").textContent = ME ? `👤 ${ME}` : "👤 Set name"; }
   $("profileBtn").onclick = async () => {
     const n = await askPrompt("Your name", { desc: "Used to label records you report in chat, and to show your own card.", value: ME, placeholder: "e.g. Huda" });
-    if (n) {
-      ME = n.slice(0, 40); localStorage.setItem("sehat-me", ME); renderProfile();
-      if ($("dashView").classList.contains("on")) loadDash();
-    }
+    if (n) { ME = n.slice(0, 40); localStorage.setItem("sehat-me", ME); renderProfile(); }
   };
   renderProfile();
-  const VLABEL = { glucose: "Fasting glucose", hba1c: "HbA1c", ldl: "LDL", chol: "Total cholesterol", sys: "Systolic BP" };
-  const UNIT = { glucose: "mg/dL", hba1c: "%", ldl: "mg/dL", chol: "mg/dL", sys: "mmHg" };
-  const WARN = { glucose: 100, hba1c: 5.7, ldl: 130, chol: 200, sys: 130 };
-  const HIGH = { glucose: 126, hba1c: 6.5, ldl: 160, chol: 240, sys: 140 };
-  const REF = { glucose: "70–99 mg/dL", hba1c: "< 5.7 %", ldl: "< 130 mg/dL", chol: "< 200 mg/dL", sys: "< 130 mmHg" };
-  const STATUSWORD = { ok: "in range", warn: "borderline", high: "high" };
-  const EMO = { Budi: "👨", Sari: "👩", Rina: "🧒", Agus: "👴", Dewi: "👵" };
-
-  function statusOf(k, v) { return v >= HIGH[k] ? "high" : v >= WARN[k] ? "warn" : "ok"; }
-  function sparkline(values, h = 40) {
-    if (!values || values.length < 2) return "";
-    const w = 300, min = Math.min(...values), max = Math.max(...values), rng = max - min || 1;
-    const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - 5 - ((v - min) / rng) * (h - 12)}`);
-    const up = values[values.length - 1] >= values[0], col = up ? "#c0392b" : "#0b8457";
-    const last = pts[pts.length - 1].split(",");
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="${last[0]}" cy="${last[1]}" r="3.4" fill="${col}"/></svg>`;
-  }
 
   // ---- nav ----
   document.querySelectorAll("nav button").forEach((b) => b.onclick = () => {
@@ -319,257 +267,42 @@
     document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === b.dataset.view));
     const chatOn = b.dataset.view === "chatView";
     form.style.display = chatOn ? "flex" : "none"; $("chatToggles").style.display = chatOn ? "flex" : "none";
-    if (b.dataset.view === "dashView") loadDash();
-    if (b.dataset.view === "alertView") loadAlerts();
+    if (b.dataset.view === "dashView") loadTable();
   });
 
-  // ---- dashboard ----
-  let FAM = {};
-  let HIDE_SAMPLE = localStorage.getItem("sehat-hide-sample") === "1";
-  // A member is "sample" demo data when every document is built-in (non-removable).
-  const isSampleMember = (m) => { const d = m.documents || []; return d.length > 0 && d.every((x) => !x.removable); };
-  function updateAlertBadge() {
-    let n = 0;
-    for (const m of Object.values(FAM)) for (const [k, s] of Object.entries(m.series || {}))
-      if (s.length && statusOf(k, s[s.length - 1].value) !== "ok") n++;
-    const b = $("alertBadge"); if (b) { b.textContent = n; b.classList.toggle("on", n > 0); }
-  }
-  function openAddFor(relation) {
-    $("modalBg").classList.add("on");
-    if (relation === "self") { $("fRelation").value = "self"; if (ME && !$("fMember").value.trim()) $("fMember").value = ME; }
-  }
-  async function loadDash() {
-    const el = $("dash"); el.innerHTML = '<div class="loading">Loading family…</div>';
+  // ---- football table ----
+  const esc = (s) => String(s ?? "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
+  const num = (v, dash = "–") => (v == null ? dash : v);
+  async function loadTable() {
+    const box = $("standings");
+    box.innerHTML = '<div class="loading">Loading standings…</div>';
     try {
-      FAM = await (await fetch("/api/family")).json();
-      updateAlertBadge();
-      el.innerHTML = "";
-      const all = Object.values(FAM);
-      const hasSample = all.some(isSampleMember);
-      let ordered = all.sort((a, b) => (a.relation === "self" ? -1 : 0) - (b.relation === "self" ? -1 : 0));
-      if (HIDE_SAMPLE) ordered = ordered.filter((m) => !isSampleMember(m));
+      const { teams, players } = await (await fetch("/api/teams")).json();
+      box.innerHTML = `<table class="stand"><thead><tr>
+          <th></th><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th>
+          <th>GF</th><th>GA</th><th>GD</th><th>xG</th><th class="team">Form</th></tr></thead>
+        <tbody>${teams.map((t, i) => `<tr>
+          <td class="pos">${i + 1}</td>
+          <td class="team">${esc(t.name)}</td>
+          <td>${t.played}</td><td>${t.wins}</td><td>${t.draws}</td><td>${t.losses}</td>
+          <td>${num(t.gf)}</td><td>${num(t.ga)}</td>
+          <td>${t.gd == null ? "–" : (t.gd > 0 ? "+" : "") + t.gd}</td>
+          <td><b>${num(t.xg)}</b></td>
+          <td class="team">${t.form.map((r) => `<span class="fp ${r}">${r}</span>`).join("")}</td>
+        </tr>`).join("")}</tbody></table>`;
 
-      // #2 Self bootstrap: if you set your name but have no records, invite you to add one.
-      const haveSelf = all.some((m) => m.relation === "self" || (ME && m.name.toLowerCase() === ME.toLowerCase()));
-      if (ME && !haveSelf) {
-        el.insertAdjacentHTML("beforeend", `<div class="card mcard" id="selfCta" style="border:1px dashed var(--brand);background:var(--brand-soft)">
-          <div class="mhead"><div class="avatar">🙂</div>
-            <div><div class="mname">${ME} <span class="pill ok">You</span></div><div class="msub">No records yet · tap to add your first</div></div>
-            <div class="chev">＋</div></div></div>`);
-      }
+      $("players").innerHTML = `<div class="card">${players.map((p, i) => `<div class="player">
+          <span class="rk">${i + 1}</span>
+          <div><div class="pn">${esc(p.name)}</div><div class="pc">${esc(p.club)}${p.position ? " · " + esc(p.position) : ""}</div></div>
+          <div class="pv"><b>${num(p.goals, 0)}</b> G · ${num(p.assists, 0)} A · xG ${num(p.xg)}</div>
+        </div>`).join("")}</div>`;
 
-      for (const m of ordered) {
-        const keys = Object.keys(m.series).slice(0, 3);
-        const stats = keys.map((k) => {
-          const last = m.series[k][m.series[k].length - 1].value, st = statusOf(k, last);
-          return `<div class="stat"><div class="k">${VLABEL[k]}</div>
-            <div class="v">${last}<small> ${UNIT[k]}</small> ${st !== "ok" ? `<span class="pill ${st}">${st}</span>` : ""}</div></div>`;
-        }).join("");
-        const sampleTag = isSampleMember(m) ? ' <span class="pill" style="background:var(--card2);color:var(--faint);border:1px solid var(--line)">Sample</span>' : "";
-        el.insertAdjacentHTML("beforeend", `<div class="card mcard" data-m="${m.name}">
-          <div class="mhead"><div class="avatar">${EMO[m.name] || "🙂"}</div>
-            <div><div class="mname">${m.name} ${m.relation === "self" ? '<span class="pill ok">You</span>' : ""}${sampleTag}</div><div class="msub">${m.docs} record${m.docs > 1 ? "s" : ""} · tap for detail</div></div>
-            <div class="chev">›</div></div>
-          ${stats ? `<div class="quickrow">${stats}</div>` : '<div class="msub" style="margin-top:10px">No numeric vitals yet</div>'}
-        </div>`);
-      }
-
-      // #3 Sample-data notice + show/hide toggle (non-destructive).
-      if (hasSample) {
-        el.insertAdjacentHTML("beforeend", `<div class="msub" style="text-align:center;padding:8px 14px 2px">
-          ${HIDE_SAMPLE ? "Built-in sample family hidden." : "Includes a built-in <b>sample</b> family for the demo."}
-          <a href="#" id="toggleSample" style="color:var(--brand-d);font-weight:700;text-decoration:none">${HIDE_SAMPLE ? "Show" : "Hide"}</a></div>`);
-        $("toggleSample").onclick = (e) => { e.preventDefault(); HIDE_SAMPLE = !HIDE_SAMPLE; localStorage.setItem("sehat-hide-sample", HIDE_SAMPLE ? "1" : "0"); loadDash(); };
-      }
-
-      document.querySelectorAll(".mcard").forEach((c) => { if (c.id !== "selfCta") c.onclick = () => openMember(c.dataset.m); });
-      const cta = $("selfCta"); if (cta) cta.onclick = () => openAddFor("self");
-      loadReminders();
-    } catch (e) { el.innerHTML = `<div class="loading">⚠️ ${e.message}</div>`; }
+      const inj = teams.flatMap((t) => t.injuries.map((n) => ({ team: t.name, note: n })));
+      $("injuries").innerHTML = inj.length ? `<div class="sectionhead"><h2>🩹 Injury flags</h2></div>
+        <div class="grid"><div class="card">${inj.map((x) => `<div class="injury"><span>⚠️</span>
+          <span><b>${esc(x.team)}</b> — ${esc(x.note)}</span></div>`).join("")}</div></div>` : "";
+    } catch (e) { box.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   }
-
-  async function loadReminders() {
-    try {
-      const rem = await (await fetch("/api/reminders")).json();
-      const box = $("reminders");
-      if (!rem.length) { box.innerHTML = ""; return; }
-      const top = rem.slice(0, 5).map((r) =>
-        `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:13px">
-          <span style="font-size:15px">${r.overdue ? "🔴" : "📅"}</span>
-          <span style="flex:1"><b>${r.member}</b> · ${r.what}</span>
-          <span class="msub">${r.due}${r.overdue ? " · overdue" : ""}</span></div>`).join("");
-      box.innerHTML = `<div class="card" style="margin:0 14px 4px"><div class="sectionhead" style="padding:0 0 4px"><h2 style="font-size:14px">⏰ Upcoming & reminders</h2></div>${top}</div>`;
-    } catch { $("reminders").innerHTML = ""; }
-  }
-
-  // ---- member detail drawer ----
-  function openMember(name) {
-    const m = FAM[name]; if (!m) return;
-    $("dAvatar").textContent = EMO[name] || "🙂";
-    $("dName").textContent = name;
-    $("dSub").textContent = `${m.docs} record${m.docs > 1 ? "s" : ""} on this device`;
-    const vit = Object.entries(m.series).map(([k, s]) => {
-      const vals = s.map((p) => p.value);
-      const last = s[s.length - 1], prev = s.length > 1 ? s[s.length - 2] : null, first = s[0];
-      const d = prev ? last.value - prev.value : null, st = statusOf(k, last.value);
-      const sincePct = first.value ? ((last.value - first.value) / first.value) * 100 : 0;
-      const deltaTxt = d == null ? "" : `<span class="delta ${d > 0 ? "up" : "down"}">${d > 0 ? "▲ +" : "▼ "}${Math.abs(d).toFixed(1)} vs prev</span>`;
-      const sinceTxt = s.length > 1 ? `<span class="delta ${sincePct > 0 ? "up" : "down"}">${sincePct > 0 ? "+" : ""}${sincePct.toFixed(0)}% since ${first.date.slice(0, 7)}</span>` : "";
-      return `<div class="vit"><div class="top"><span class="nm">${VLABEL[k]}</span>
-        <span class="pill ${st}">${STATUSWORD[st]}</span>
-        <span class="big">${last.value}<small> ${UNIT[k]}</small></span></div>
-        ${sparkline(vals)}
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px" class="msub">
-          <span>📅 ${last.date}</span>${deltaTxt}${sinceTxt}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:11px" class="msub">
-          <span>Normal: ${REF[k]}</span><span>${s.length} reading${s.length > 1 ? "s" : ""} · range ${Math.min(...vals)}–${Math.max(...vals)}</span></div></div>`;
-    }).join("");
-    const meds = m.meds.length ? `<div class="vit"><span class="nm">💊 Medications</span><div class="meds">${m.meds.map((x) => `<span>${x}</span>`).join("")}</div></div>` : "";
-    const allerg = m.allergies?.length ? `<div class="vit" style="border-left:3px solid var(--high)"><span class="nm">⚠️ Allergies</span><div class="meds">${m.allergies.map((x) => `<span>${x}</span>`).join("")}</div></div>` : "";
-    const actions = `<div style="display:flex;gap:8px;margin:12px 14px">
-      <button class="btn-ghost" style="flex:1;padding:10px;border-radius:12px;cursor:pointer" onclick="window.exportMember('${name}')">⬇ Export summary</button>
-      <button class="btn-primary" style="flex:1;padding:10px;border-radius:12px;cursor:pointer;border:0" onclick="window.showQR('${name}')">🆘 Emergency QR</button>
-    </div><div id="qrBox"></div>`;
-    const docs = (m.documents || []).length
-      ? `<div class="vit"><span class="nm">📄 Documents (${m.documents.length})</span>${m.documents.map((d) =>
-          `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">
-            <span style="flex:1">${d.source}${d.date ? ` · ${d.date}` : ""}</span>
-            ${d.removable
-              ? `<button onclick="window.delDoc('${d.source.replace(/'/g, "")}','${name}')" style="border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;color:var(--high)">🗑</button>`
-              : `<span class="msub" style="font-size:11px">sample</span>`}
-          </div>`).join("")}</div>`
-      : "";
-    $("dBody").innerHTML = actions + allerg + (vit || '<div class="loading">No numeric vitals on record.</div>') + meds + docs;
-    $("drawerBg").classList.add("on"); $("drawer").classList.add("on");
-  }
-  const closeDrawer = () => { $("drawerBg").classList.remove("on"); $("drawer").classList.remove("on"); };
-  $("dClose").onclick = closeDrawer; $("drawerBg").onclick = closeDrawer;
-
-  window.exportMember = (name) => { window.location = "/api/export?member=" + encodeURIComponent(name); };
-  window.delDoc = async (source, name) => {
-    if (!confirm(`Delete "${source}"? This removes it from records and search.`)) return;
-    try {
-      const j = await (await fetch("/api/delete-record?source=" + encodeURIComponent(source), { method: "POST" })).json();
-      if (!j.ok) throw new Error(j.error);
-      FAM = await (await fetch("/api/family")).json();
-      if (FAM[name]) openMember(name); else { closeDrawer(); }
-      loadDash();
-    } catch (e) { alert("⚠️ " + e.message); }
-  };
-  window.showQR = (name) => {
-    const box = $("qrBox");
-    box.innerHTML = `<div class="vit" style="text-align:center"><span class="nm">🆘 Emergency card — scan to read critical info</span>
-      <div style="background:#fff;border-radius:12px;padding:12px;margin-top:8px;display:inline-block">
-        <img src="/api/qr?member=${encodeURIComponent(name)}" alt="Emergency QR" style="width:240px;height:240px" /></div>
-      <div class="msub" style="margin-top:6px">Allergies, conditions, meds & recent vitals — works offline, no cloud.</div></div>`;
-    box.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  // ---- add member modal ----
-  $("addBtn").onclick = () => openAddFor();
-  $("fRelation").onchange = () => { if ($("fRelation").value === "self" && ME && !$("fMember").value.trim()) $("fMember").value = ME; };
-  $("fCancel").onclick = () => $("modalBg").classList.remove("on");
-  $("fSave").onclick = async () => {
-    const member = $("fMember").value.trim(), source = $("fSource").value.trim() || (member ? `record-${member}.txt` : ""), text = $("fText").value.trim();
-    const relation = $("fRelation").value;
-    const msg = $("formMsg");
-    // Photo/document upload path (OCR) takes priority if an image is chosen.
-    const imgFile = $("fImage").files?.[0];
-    if (imgFile) {
-      msg.textContent = "Reading the document on the family PC…";
-      try {
-        const q = `?member=${encodeURIComponent(member || "")}&relation=${relation}`;
-        const j = await (await fetch(`/api/upload-image${q}`, { method: "POST", headers: { "content-type": imgFile.type || "image/jpeg" }, body: imgFile })).json();
-        if (!j.ok) throw new Error(j.error);
-        msg.textContent = `✅ Added for ${j.member} (${j.chars} chars read).`;
-        $("fImage").value = "";
-        setTimeout(() => { $("modalBg").classList.remove("on"); msg.textContent = ""; loadDash(); }, 800);
-      } catch (e) { msg.textContent = "⚠️ " + e.message; }
-      return;
-    }
-    // CSV import path (if a file is chosen, it takes over).
-    const csvFile = $("fCsv").files?.[0];
-    if (csvFile) {
-      if (!member) { msg.textContent = "⚠️ Enter the member name for the CSV."; return; }
-      msg.textContent = "Importing CSV on the family PC…";
-      try {
-        const csv = await csvFile.text();
-        const j = await (await fetch(`/api/import-csv?member=${encodeURIComponent(member)}&relation=${relation}`, { method: "POST", body: csv })).json();
-        if (!j.ok) throw new Error(j.error);
-        msg.textContent = `✅ Imported ${j.imported} date(s).`;
-        $("fCsv").value = "";
-        setTimeout(() => { $("modalBg").classList.remove("on"); msg.textContent = ""; loadDash(); }, 700);
-      } catch (e) { msg.textContent = "⚠️ " + e.message; }
-      return;
-    }
-    if (!member || !text) { msg.textContent = "⚠️ Name and record text are required."; return; }
-    msg.textContent = "Saving & indexing on the family PC…";
-    try {
-      const j = await (await fetch("/api/ingest", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ member, source, text, relation }) })).json();
-      if (!j.ok) throw new Error(j.error);
-      msg.textContent = "✅ Saved.";
-      $("fText").value = ""; $("fMember").value = ""; $("fSource").value = "";
-      setTimeout(() => { $("modalBg").classList.remove("on"); msg.textContent = ""; loadDash(); }, 600);
-    } catch (e) { msg.textContent = "⚠️ " + e.message; }
-  };
-
-  // ---- invite ----
-  $("inviteBtn").onclick = async () => {
-    $("inviteBg").classList.add("on");
-    try {
-      const info = await (await fetch("/api/info")).json();
-      const httpsUrl = (info.httpsUrls || [])[0];
-      const httpUrl = (info.joinUrls || [])[0] || location.origin;
-      // Prefer the HTTPS link so the invited phone gets the mic / voice loop.
-      $("joinUrl").value = httpsUrl || httpUrl;
-      const lines = [];
-      if (httpsUrl) lines.push("🎙️ This link enables voice (mic needs HTTPS) — accept the certificate warning once on the phone.");
-      lines.push(`💬 Easy link (chat & dashboard, no mic): ${httpUrl}`);
-      if (!httpsUrl) lines.push("(Voice needs the HTTPS server — run `npm start` with a cert on the PC.)");
-      const others = (httpsUrl ? info.httpsUrls : info.joinUrls).slice(1);
-      if (others.length) lines.push(`Other addresses: ${others.join("  ·  ")}`);
-      if (info.p2pKey) lines.push(`🌍 Remote family (P2P, any network): a relative's device can delegate to this home node by public key — ${info.p2pKey.slice(0, 16)}… (run \`npm run delegate <key>\`).`);
-      $("inviteMsg").textContent = lines.join("\n\n");
-    } catch { $("joinUrl").value = location.origin; }
-  };
-  $("iClose").onclick = () => $("inviteBg").classList.remove("on");
-  $("iCopy").onclick = async () => {
-    try { await navigator.clipboard.writeText($("joinUrl").value); $("iCopy").textContent = "Copied ✓"; setTimeout(() => $("iCopy").textContent = "Copy link", 1200); }
-    catch { $("joinUrl").select(); }
-  };
-
-  // ---- alerts ----
-  function loadAlerts() {
-    const box = $("briefingBox"), list = $("alerts");
-    box.innerHTML = '<div class="briefing"><div class="h">🔔 Proactive briefing</div><span class="loading">MedPsy is reviewing the records…</span></div>';
-    list.innerHTML = "";
-    const es = new EventSource("/api/alerts");
-    es.addEventListener("alerts", (ev) => {
-      const a = JSON.parse(ev.data);
-      if (!a.length) { list.innerHTML = '<div class="card"><div class="alert"><div class="ic" style="background:var(--brand-soft)">✅</div><div><div class="t">All clear</div><div class="d">Every tracked vital is within range.</div></div></div></div>'; return; }
-      list.innerHTML = a.map((x) => `<div class="card"><div class="alert ${x.severity}">
-        <div class="ic">${x.severity === "high" ? "🚨" : "⚠️"}</div>
-        <div style="flex:1"><div class="t">${x.member}: ${x.metric} ${x.value}${x.unit} <span class="pill ${x.severity}">${x.severity}</span></div>
-          <div class="d">${x.rising ? "▲ rising " : ""}${x.trend != null ? `(${x.trend > 0 ? "+" : ""}${x.trend.toFixed(1)} vs previous) ` : ""}· ${x.date}</div></div>
-        <div style="width:90px">${sparkline(x.series, 34)}</div></div></div>`).join("");
-    });
-    es.addEventListener("briefing", (ev) => {
-      const txt = JSON.parse(ev.data);
-      box.innerHTML = `<div class="briefing"><div class="h">🔔 Proactive briefing · MedPsy</div>${txt}
-        <div style="margin-top:10px"><button id="listenBtn" class="btn-ghost" style="padding:8px 14px;border-radius:10px;cursor:pointer">🔊 Listen</button></div></div>`;
-      $("listenBtn").onclick = () => {
-        const b = $("listenBtn"); b.textContent = "🔊 Loading…"; b.disabled = true;
-        const a = new Audio("/api/speak?text=" + encodeURIComponent(txt.slice(0, 700)));
-        a.onplay = () => (b.textContent = "🔊 Playing…");
-        a.onended = () => { b.textContent = "🔊 Listen"; b.disabled = false; };
-        a.onerror = () => { b.textContent = "🔊 Listen"; b.disabled = false; };
-        a.play().catch(() => { b.textContent = "🔊 Listen"; b.disabled = false; });
-      };
-      es.close();
-    });
-    es.addEventListener("error", () => { box.innerHTML = '<div class="briefing">⚠️ Could not load alerts.</div>'; es.close(); });
-  }
-
   // ---- chat ----
   const history = JSON.parse(localStorage.getItem("sehat-history") || "[]");
   function persist(cls, text) { history.push({ cls, text }); while (history.length > 200) history.shift(); localStorage.setItem("sehat-history", JSON.stringify(history)); }
@@ -600,9 +333,6 @@
   };
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
-
-  // Initial alert badge so 🔔 shows a count before the dashboard is ever opened.
-  (async () => { try { FAM = await (await fetch("/api/family")).json(); updateAlertBadge(); } catch {} })();
 
   let streaming = false, currentES = null;
   const endStream = () => { streaming = false; send.textContent = "➤"; send.title = "Send"; };

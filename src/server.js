@@ -13,6 +13,7 @@ import { SehatEngine } from "./engine.js";
 import { SehatAgent } from "./agent.js";
 import { Translator } from "./translator.js";
 import { loadFamily, computeAlerts, loadDocs, computeReminders, emergencyCard } from "./health-data.js";
+import { loadTeams, loadPlayers } from "./football-data.js";
 import { textToSpeech, TTS_EN_SUPERTONIC_Q8_0, ocr, OCR_LATIN_RECOGNIZER_1 } from "@qvac/sdk";
 import QRCode from "qrcode";
 import { wavHeader, int16ToBuffer } from "./audio-utils.js";
@@ -287,6 +288,11 @@ async function handler(req, res) {
     const members = loadFamily();
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify(members));
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/teams") {
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({ teams: loadTeams(), players: loadPlayers() }));
   }
 
   if (req.method === "POST" && url.pathname === "/api/stop") {
