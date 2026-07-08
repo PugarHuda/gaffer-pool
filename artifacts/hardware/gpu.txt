@@ -1,8 +1,0 @@
-﻿
-
-Name          : NVIDIA GeForce GTX 1660 SUPER
-VRAM_GB       : 4
-DriverVersion : 32.0.15.9186
-
-
-

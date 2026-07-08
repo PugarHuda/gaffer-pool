@@ -1,9 +1,0 @@
-﻿
-
-Caption        : Microsoft Windows 11 Education
-Version        : 10.0.26200
-BuildNumber    : 26200
-OSArchitecture : 64-bit
-
-
-

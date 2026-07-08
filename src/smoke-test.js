@@ -20,7 +20,7 @@ log.modelLoad({
 console.log(`Model loaded: ${modelId}`);
 
 const prompt =
-  "In two sentences, why does on-device AI matter for family health data privacy?";
+  "In two sentences, why does on-device AI matter for keeping your football picks and analysis private?";
 const history = [{ role: "user", content: prompt }];
 
 const inferStart = performance.now();
