@@ -16,6 +16,21 @@ import { loadTeams, loadPlayers } from "./football-data.js";
 import { textToSpeech, TTS_EN_SUPERTONIC_Q8_0, ocr, OCR_LATIN_RECOGNIZER_1 } from "@qvac/sdk";
 import QRCode from "qrcode";
 import { wavHeader, int16ToBuffer } from "./audio-utils.js";
+import WDK from "@tetherto/wdk";
+import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
+
+// --- Gaffer Pool (fixed-odds bet, self-custodial WDK settlement) — mirrors demo-pool.js ---
+const USDT = process.env.POOL_USDT || "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+const USDT_DECIMALS = 6;
+const unitsUsdt = (n) => BigInt(Math.round(n * 10 ** USDT_DECIMALS)).toString();
+const OUTCOMES = { HOME: "Real Madrid win", DRAW: "Draw", AWAY: "Manchester City win" };
+function parseProbs(text) {
+  const g = (k) => { const m = new RegExp(`${k}\\s*=?\\s*(\\d{1,3})\\s*%`, "i").exec(text); return m ? +m[1] : null; };
+  let p = { HOME: g("HOME"), DRAW: g("DRAW"), AWAY: g("AWAY") };
+  const sum = (p.HOME ?? 0) + (p.DRAW ?? 0) + (p.AWAY ?? 0);
+  if (!sum || Object.values(p).some((v) => v == null)) return { HOME: 1 / 3, DRAW: 1 / 3, AWAY: 1 / 3 };
+  return { HOME: p.HOME / sum, DRAW: p.DRAW / sum, AWAY: p.AWAY / sum };
+}
 
 const PORT = Number(process.env.PORT ?? 8787);
 const engine = new SehatEngine();
@@ -286,6 +301,64 @@ async function handler(req, res) {
   if (req.method === "GET" && url.pathname === "/api/teams") {
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ teams: loadTeams(), players: loadPlayers() }));
+  }
+
+  // Gaffer Pool: on-device fair odds from the analyst (mirrors demo-pool.js).
+  if (req.method === "GET" && url.pathname === "/api/odds") {
+    const probsQ = "Estimate the probability of each outcome for this match as three integer percentages that sum to 100. Reply with EXACTLY this one line, nothing else: HOME=<n>% DRAW=<n>% AWAY=<n>%";
+    queue = queue
+      .then(async () => {
+        const { answer } = await engine.ask(probsQ, {});
+        const probs = parseProbs(answer);
+        const odds = Object.fromEntries(Object.entries(probs).map(([k, v]) => [k, +(1 / v).toFixed(2)]));
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ match: "Real Madrid vs Manchester City — 2nd leg", probs, odds }));
+      })
+      .catch((e) => { res.writeHead(500); res.end(String(e?.message ?? e)); });
+    return;
+  }
+
+  // Gaffer Pool: place a fixed-odds bet & settle it self-custodially (mirrors demo-pool.js).
+  if (req.method === "POST" && url.pathname === "/api/bet") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const { outcome, role, stake, odds, result } = JSON.parse(body);
+        if (!OUTCOMES[outcome] || !OUTCOMES[result]) throw new Error("invalid outcome/result");
+        const backerIsUser = role === "back";
+        const wallets = {};
+        for (const who of ["user", "counterparty"]) {
+          const wdk = new WDK(WDK.getRandomSeedPhrase());
+          wdk.registerWallet("ethereum", WalletManagerEvm, { provider: process.env.POOL_RPC || "https://ethereum-sepolia-rpc.publicnode.com" });
+          const acct = await wdk.getAccount("ethereum", 0);
+          wallets[who] = { account: acct, address: await acct.getAddress() };
+        }
+        const backer = backerIsUser ? wallets.user : wallets.counterparty;
+        const layer = backerIsUser ? wallets.counterparty : wallets.user;
+        const price = Number(odds), stakeAmt = Number(stake);
+        const liability = +(stakeAmt * (price - 1)).toFixed(2);
+        const payout = +(stakeAmt * price).toFixed(2);
+        const backerSig = await backer.account.sign(`Gaffer Pool | back ${outcome} @ ${price}x | ${backer.address}`);
+        const layerSig = await layer.account.sign(`Gaffer Pool | lay ${outcome} @ ${price}x | ${layer.address}`);
+        const backerWins = result === outcome;
+        const from = backerWins ? layer : backer;
+        const to = backerWins ? backer : layer;
+        const amount = backerWins ? liability : stakeAmt;
+        const tx = await WalletAccountEvm._getTransferTransaction({ token: USDT, recipient: to.address, amount: unitsUsdt(amount) });
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({
+          outcome, role, odds: price, stake: stakeAmt, liability, payout, result,
+          backer: backer.address, layer: layer.address, backerSig, layerSig,
+          winnerIsUser: to === wallets.user, from: from.address, to: to.address,
+          amount, token: USDT, calldata: tx.data,
+        }));
+      } catch (err) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: String(err?.message ?? err) }));
+      }
+    });
+    return;
   }
 
   if (req.method === "POST" && url.pathname === "/api/stop") {
