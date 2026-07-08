@@ -131,6 +131,7 @@ Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs 
 ### Requirements & reproducibility
 
 - Tested on **Windows 11 + a 6 GB NVIDIA GPU**; **Node ≥ 22**.
+- **`npm install` auto-builds the QVAC worker bundle** (the `qvac/` dir) via a `postinstall` step. If you install with `--ignore-scripts`, run **`npm run setup`** once before anything else.
 - **First run downloads models** via the QVAC SDK (~2.5 GB Qwen, plus GTE-large), then caches them — later runs are offline.
 - **Less/no GPU?** Set `GAFFER_GPU_LAYERS=0` to run the LLM on CPU (slower); the embedder already runs on CPU.
 - The **P2P demo needs two terminals** (one per peer).

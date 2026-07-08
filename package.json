@@ -5,6 +5,8 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
+    "postinstall": "node scripts/bundle-qvac.mjs",
+    "setup": "node scripts/bundle-qvac.mjs",
     "smoke": "node src/smoke-test.js",
     "test:gpu": "node src/gpu-test.js",
     "demo:analyst": "node src/demo-analyst.js",
