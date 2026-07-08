@@ -1,0 +1,26 @@
+Player: Erling Haaland
+Club: Manchester City
+Position: Centre-forward / penalty-box finisher
+Date: 2026-06-01
+Season: 2025/26 (all competitions)
+
+Role: A pure number nine. Lives on the last defender's shoulder, attacks the box
+and the back post, and converts a high share of the chances City manufacture.
+Minimal build-up involvement by design — his job is the final action.
+
+Season stats:
+Appearances: 40
+Goals: 26
+Assists: 4
+xG: 22.0
+xA: 3.1
+Shots per 90: 4.2
+Conversion rate %: 24
+Aerial duels won %: 55
+
+Scouting notes:
+- Defend the cross before it reaches him — once he's set in the six-yard box he
+  rarely misses. Deny service, not the shot.
+- Steps off the last defender for the through ball; a deep line neutralises his
+  best weapon but invites pressure elsewhere.
+- Low touch count means he can be quiet for an hour and still win the game in one moment.

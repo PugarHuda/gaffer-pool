@@ -1,0 +1,25 @@
+Club: Arsenal
+Competition: UEFA Champions League / Premier League
+Date: 2026-06-01
+Season: 2025/26
+
+Style of play: Controlled positional possession with rehearsed patterns. Builds
+patiently, an inverted fullback forms a double pivot, and the attack overloads
+the right half-space before switching to an isolated left winger. Elite set-piece
+programme.
+
+Strengths:
+- Best defensive record in this sample — compact, disciplined, hard to break down.
+- Set pieces are a repeatable, high-volume goal source.
+- Positional discipline limits the transitions it concedes.
+
+Weaknesses:
+- Can lack a plan B when a low block concedes zero central space.
+- Occasionally slow to turn territory into clear-cut chances.
+
+Key players: an inverted fullback, a right-wing creator, a set-piece target at the back post.
+
+Recent form (last 5, most recent last): W W W W D
+Goals scored last 5: 12
+Goals conceded last 5: 3
+xG last 5: 11.0

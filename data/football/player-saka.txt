@@ -1,0 +1,26 @@
+Player: Bukayo Saka
+Club: Arsenal
+Position: Right winger / inside forward
+Date: 2026-06-01
+Season: 2025/26 (all competitions)
+
+Role: Arsenal's primary creator from the right. Hugs the touchline to stretch the
+block, then cuts inside onto his left to shoot or thread the cutback. The hub of
+the right half-space overload.
+
+Season stats:
+Appearances: 39
+Goals: 12
+Assists: 11
+xG: 9.5
+xA: 8.4
+Shots per 90: 2.6
+Key passes per 90: 2.4
+Successful dribbles per 90: 2.1
+
+Scouting notes:
+- Show him down the line, not inside — his cut-back onto the left foot is where
+  the goals and assists come from.
+- Double up with a tight fullback and a screening midfielder; one-v-one he wins.
+- Heavy creative load: limit his touches in the right half-space and Arsenal's
+  chance volume drops sharply.

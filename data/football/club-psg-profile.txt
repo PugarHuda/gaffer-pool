@@ -1,0 +1,23 @@
+Club: Paris Saint-Germain
+Competition: UEFA Champions League / Ligue 1
+Date: 2026-06-01
+Season: 2025/26
+
+Style of play: Possession with individual verticality — a young, pacey front
+line runs in behind while a deep playmaker dictates. Dominates the ball at home;
+more direct and transition-reliant in big away matches.
+
+Strengths:
+- Explosive pace in the front line stretches any high line.
+- A deep-lying playmaker who can unlock a block with one pass.
+
+Weaknesses:
+- Defensively open in transition — the most goals conceded in this sample.
+- Rest-defence structure breaks down when the fullbacks commit forward.
+
+Key players: a deep playmaker, two pacey wide forwards, a mobile striker.
+
+Recent form (last 5, most recent last): W W D L W
+Goals scored last 5: 10
+Goals conceded last 5: 7
+xG last 5: 9.5
