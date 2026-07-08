@@ -25,8 +25,13 @@
     --radius: 12px;
   }
   * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html { background: #d8d4c4; }
   body { background: var(--bg-grad); color: var(--ink); height: 100dvh; display: flex; flex-direction: column;
+    max-width: 1060px; width: 100%; margin: 0 auto; border-left: 3px solid var(--line); border-right: 3px solid var(--line); overflow: hidden;
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .shell { flex: 1; display: flex; min-height: 0; }
+  .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
   header { padding: 14px 18px; display: flex; align-items: center; gap: 12px; background: #fff; border-bottom: 3px solid var(--line); }
   .mark { width: 40px; height: 40px; border-radius: 9px; background: var(--yellow);
@@ -37,10 +42,11 @@
     padding: 6px 12px; border-radius: 999px; border: 2px solid #111; box-shadow: var(--shadow-sm); white-space: nowrap; }
   .chip:active { transform: translate(2px,2px); box-shadow: none; }
 
-  nav { display: flex; gap: 8px; padding: 12px 14px 0; }
-  nav button { flex: 1; padding: 10px; border: 2px solid transparent; background: transparent; color: var(--muted);
-    font-size: 13.5px; font-weight: 800; border-radius: 10px; cursor: pointer; transition: .1s; text-transform: uppercase; letter-spacing: .02em; }
+  nav { display: flex; flex-direction: column; gap: 8px; padding: 14px 10px; width: 134px; flex-shrink: 0; background: #fff; border-right: 3px solid var(--line); }
+  nav button { width: 100%; text-align: left; padding: 11px 12px; border: 2px solid transparent; background: transparent; color: var(--muted);
+    font-size: 13px; font-weight: 800; border-radius: 10px; cursor: pointer; transition: .1s; text-transform: uppercase; letter-spacing: .02em; }
   nav button.on { color: #111; background: var(--brand); border-color: #111; box-shadow: var(--shadow-sm); }
+  @media (max-width: 480px) { nav { width: 108px; padding: 12px 8px; } nav button { font-size: 12px; padding: 10px 9px; } }
   .navbadge { display: none; min-width: 18px; height: 18px; line-height: 18px; padding: 0 4px; margin-left: 5px; font-size: 10.5px; font-weight: 900;
     color: #fff; background: var(--high); border-radius: 999px; border: 1.5px solid #111; vertical-align: middle; }
   .navbadge.on { display: inline-block; }
@@ -184,12 +190,13 @@
   <button id="profileBtn" class="chip" style="cursor:pointer;border:0">👤 Set name</button>
 </header>
 
+<div class="shell">
 <nav>
   <button class="on" data-view="chatView">💬 Chat</button>
   <button data-view="dashView">📊 Table</button>
   <button data-view="betView">💰 Bet</button>
 </nav>
-
+<div class="content">
 <main>
   <section id="chatView" class="view on"><div id="chat">
     <div class="hint">Ask about <b>teams, players, tactics and matches</b>.<br />
@@ -267,6 +274,8 @@
   <button type="button" id="mic" class="iconbtn" title="Tap to talk">🎙️</button>
   <button id="send">➤</button>
 </form>
+</div><!-- .content -->
+</div><!-- .shell -->
 
 <!-- generic prompt modal (Electron has no window.prompt) -->
 <div class="modal-bg" id="promptBg"><div class="modal">
@@ -352,9 +361,9 @@
     try {
       const { odds } = await (await fetch("/api/odds")).json();
       ODDS = odds;
-      const label = { HOME: "HOME", DRAW: "DRAW", AWAY: "AWAY" };
-      box.innerHTML = Object.keys(label).map((k) => `<div class="stat">
-        <div class="k">${label[k]}</div><div class="v">${odds[k]}×</div></div>`).join("");
+      const tint = { HOME: "var(--sky-soft)", DRAW: "var(--amber-soft)", AWAY: "var(--pink)" };
+      box.innerHTML = ["HOME", "DRAW", "AWAY"].map((k) => `<div class="stat" style="background:${tint[k]}">
+        <div class="k">${k}</div><div class="v">${odds[k]}×</div></div>`).join("");
     } catch (e) { box.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   }
 
@@ -404,16 +413,16 @@
     try {
       const { teams, players } = await (await fetch("/api/teams")).json();
       box.innerHTML = `<table class="stand"><thead><tr>
-          <th></th><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th>
-          <th>GF</th><th>GA</th><th>GD</th><th>xG</th><th class="team">Form</th></tr></thead>
+          <th></th><th class="team">Team</th><th>P</th><th>W-D-L</th>
+          <th>GD</th><th>xG</th><th>Form</th></tr></thead>
         <tbody>${teams.map((t, i) => `<tr>
           <td class="pos">${i + 1}</td>
           <td class="team">${esc(t.name)}</td>
-          <td>${t.played}</td><td>${t.wins}</td><td>${t.draws}</td><td>${t.losses}</td>
-          <td>${num(t.gf)}</td><td>${num(t.ga)}</td>
+          <td>${t.played}</td>
+          <td><b>${t.wins}</b>-${t.draws}-${t.losses}</td>
           <td>${t.gd == null ? "–" : (t.gd > 0 ? "+" : "") + t.gd}</td>
           <td><b>${num(t.xg)}</b></td>
-          <td class="team">${t.form.map((r) => `<span class="fp ${r}">${r}</span>`).join("")}</td>
+          <td>${t.form.map((r) => `<span class="fp ${r}">${r}</span>`).join("")}</td>
         </tr>`).join("")}</tbody></table>`;
 
       $("players").innerHTML = `<div class="card">${players.map((p, i) => `<div class="player">
