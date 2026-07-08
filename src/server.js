@@ -12,7 +12,6 @@ import { startQVACProvider, loadModel, unloadModel, transcribe, WHISPER_LARGE_V3
 import { SehatEngine } from "./engine.js";
 import { SehatAgent } from "./agent.js";
 import { Translator } from "./translator.js";
-import { loadFamily, computeAlerts, loadDocs, computeReminders, emergencyCard } from "./health-data.js";
 import { loadTeams, loadPlayers } from "./football-data.js";
 import { textToSpeech, TTS_EN_SUPERTONIC_Q8_0, ocr, OCR_LATIN_RECOGNIZER_1 } from "@qvac/sdk";
 import QRCode from "qrcode";
@@ -284,12 +283,6 @@ async function handler(req, res) {
     return res.end(JSON.stringify({ joinUrls: httpUrls, httpsUrls, https: useTls, httpsPort: PORT, httpPort: HTTP_PORT, p2pKey }));
   }
 
-  if (req.method === "GET" && url.pathname === "/api/family") {
-    const members = loadFamily();
-    res.writeHead(200, { "content-type": "application/json" });
-    return res.end(JSON.stringify(members));
-  }
-
   if (req.method === "GET" && url.pathname === "/api/teams") {
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ teams: loadTeams(), players: loadPlayers() }));
@@ -299,62 +292,6 @@ async function handler(req, res) {
     await engine.cancelCurrent();
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ ok: true }));
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/reminders") {
-    const today = new Date().toISOString().slice(0, 10);
-    const reminders = computeReminders(loadDocs(), today);
-    res.writeHead(200, { "content-type": "application/json" });
-    return res.end(JSON.stringify(reminders));
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/qr") {
-    const name = url.searchParams.get("member") ?? "";
-    const card = emergencyCard(loadFamily(), name);
-    if (!card) { res.writeHead(404); return res.end("unknown member"); }
-    const lines = [
-      `SEHAT EMERGENCY CARD`,
-      `Name: ${card.name}`,
-      card.allergies.length ? `Allergies: ${card.allergies.join("; ")}` : `Allergies: none on record`,
-      card.conditions.length ? `Conditions: ${card.conditions.join("; ")}` : null,
-      card.medications.length ? `Medications: ${card.medications.join("; ")}` : null,
-      card.latest.bp ? `Recent BP: ${card.latest.bp} mmHg` : null,
-      card.latest.glucose ? `Recent glucose: ${card.latest.glucose} mg/dL` : null,
-      `(Generated on-device by Sehat — educational, not a medical record)`,
-    ].filter(Boolean);
-    const svg = await QRCode.toString(lines.join("\n"), { type: "svg", margin: 1, width: 320 });
-    res.writeHead(200, { "content-type": "image/svg+xml" });
-    return res.end(svg);
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/export") {
-    const name = url.searchParams.get("member") ?? "";
-    const members = loadFamily();
-    const m = members[name];
-    if (!m) { res.writeHead(404); return res.end("unknown member"); }
-    const today = new Date().toISOString().slice(0, 10);
-    const reminders = computeReminders(loadDocs(), today).filter((r) => r.member === name);
-    const VL = { glucose: "Fasting glucose (mg/dL)", hba1c: "HbA1c (%)", ldl: "LDL (mg/dL)", chol: "Total cholesterol (mg/dL)", sys: "Systolic BP (mmHg)" };
-    const md = [
-      `# Sehat health summary — ${name}`,
-      `_Generated on-device ${today}. Educational summary, not a medical record._`,
-      ``,
-      m.allergies.length ? `**Allergies:** ${m.allergies.join("; ")}` : `**Allergies:** none on record`,
-      m.conditions.length ? `**Conditions:** ${m.conditions.join("; ")}` : null,
-      m.meds.length ? `**Medications:** ${m.meds.join("; ")}` : null,
-      ``,
-      `## Vital trends`,
-      ...Object.entries(m.series).map(([k, s]) =>
-        `- **${VL[k] ?? k}:** ${s.map((p) => `${p.date}: ${p.value}`).join("  →  ")}`),
-      ``,
-      `## Upcoming`,
-      reminders.length ? reminders.map((r) => `- ${r.due} — ${r.what}${r.overdue ? " (overdue)" : ""}`).join("\n") : "- none",
-    ].filter((x) => x !== null).join("\n");
-    res.writeHead(200, {
-      "content-type": "text/markdown; charset=utf-8",
-      "content-disposition": `attachment; filename="sehat-${name}-${today}.md"`,
-    });
-    return res.end(md);
   }
 
   if (req.method === "GET" && url.pathname === "/api/speak") {
@@ -413,31 +350,6 @@ async function handler(req, res) {
         res.end(JSON.stringify({ ok: false, error: String(err?.message ?? err) }));
       }
     });
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/api/alerts") {
-    res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
-    const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-    queue = queue
-      .then(async () => {
-        const members = loadFamily();
-        const alerts = computeAlerts(members);
-        send("alerts", alerts); // deterministic, instant — UI renders cards/sparklines now
-        if (alerts.length === 0) { send("briefing", "No alerts — all tracked vitals are within range. 🎉"); return; }
-        // Proactive agent step: MedPsy writes a short plain-language briefing.
-        const summary = alerts
-          .map((a) => `${a.member}: ${a.metric} ${a.value}${a.unit} (${a.severity}${a.rising ? ", rising" : ""})`)
-          .join("; ");
-        const prompt =
-          `You are Sehat, proactively reviewing a family's health records (education only, not diagnosis). ` +
-          `These flags were detected: ${summary}. Write a calm 2-3 sentence briefing for the family: ` +
-          `what stands out, and one gentle, general next step. Do not diagnose; suggest seeing a doctor where appropriate.`;
-        const answer = await engine.complete(prompt);
-        send("briefing", answer.trim());
-      })
-      .catch((err) => send("error", String(err?.message ?? err)))
-      .finally(() => res.end());
     return;
   }
 
