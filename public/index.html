@@ -460,12 +460,12 @@
     currentES = es;
     es.addEventListener("token", (ev) => { text += JSON.parse(ev.data); bot.textContent = text; chat.scrollTop = chat.scrollHeight; });
     es.addEventListener("reset", () => { text = ""; bot.textContent = ""; });
-    es.addEventListener("saved", (ev) => { const d = JSON.parse(ev.data); addMeta(`📌 Saved to records · <span class="src">${d.summary}</span>`); });
+    es.addEventListener("saved", (ev) => { const d = JSON.parse(ev.data); addMeta(`📌 Saved to records · <span class="src">${esc(d.summary)}</span>`); });
     es.addEventListener("done", (ev) => {
       const { stats, sources } = JSON.parse(ev.data); persist("bot", text || (bot.textContent = "(stopped)"));
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
       const tps = stats.durationMs && stats.ttftMs !== null ? (stats.tokenCount / (stats.durationMs / 1000)).toFixed(1) : null;
-      addMeta((stats.ttftMs !== null ? `⚡ TTFT ${stats.ttftMs} ms · ${tps} tok/s · ` : `🤖 agent · `) + `${secs}s` + (sources.length ? ` · 📄 <span class="src">${sources.join(", ")}</span>` : ""));
+      addMeta((stats.ttftMs !== null ? `⚡ TTFT ${stats.ttftMs} ms · ${tps} tok/s · ` : `🤖 agent · `) + `${secs}s` + (sources.length ? ` · 📄 <span class="src">${esc(sources.join(", "))}</span>` : ""));
       es.close(); endStream();
       if (window.__voiceMode && text) { window.__voiceMode = false; speakAnswer(text); } else { input.focus(); }
     });

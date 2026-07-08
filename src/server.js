@@ -229,7 +229,7 @@ async function handler(req, res) {
         }
         const sources = [
           ...new Set(
-            hits.map((h) => /\[source: ([^\]]+)\]/.exec(h.content)?.[1]).filter(Boolean)
+            hits.map((h) => /\[source: ([^\]]+)\]/.exec(h.content)?.[1]?.replace(/[^a-z0-9._\- ]/gi, "")).filter(Boolean)
           ),
         ];
         send("done", { stats, sources });
@@ -321,15 +321,17 @@ async function handler(req, res) {
   // Gaffer Pool: place a fixed-odds bet & settle it self-custodially (mirrors demo-pool.js).
   if (req.method === "POST" && url.pathname === "/api/bet") {
     let body = "";
-    req.on("data", (c) => (body += c));
+    req.on("error", () => {});
+    req.on("data", (c) => { body += c; if (body.length > 10_000) req.destroy(); }); // cap: bet JSON is tiny
     req.on("end", async () => {
       try {
         const { outcome, role, stake, odds, result } = JSON.parse(body);
         if (!OUTCOMES[outcome] || !OUTCOMES[result]) throw new Error("outcome/result must be one of HOME, DRAW, AWAY");
         if (role !== "back" && role !== "lay") throw new Error("role must be back or lay");
         const price = Number(odds), stakeAmt = Number(stake);
-        if (!Number.isFinite(stakeAmt) || stakeAmt <= 0) throw new Error("stake must be a positive number");
-        if (!Number.isFinite(price) || price <= 1) throw new Error("odds must be a number greater than 1");
+        if (!Number.isFinite(stakeAmt) || stakeAmt <= 0 || stakeAmt > 1e6) throw new Error("stake must be a positive number up to 1,000,000");
+        // Clamp odds to a sane range so a crafted request can't sign a bet at absurd figures.
+        if (!Number.isFinite(price) || price <= 1 || price > 100) throw new Error("odds must be a number in (1, 100]");
         const backerIsUser = role === "back";
         const wallets = {};
         for (const who of ["user", "counterparty"]) {
