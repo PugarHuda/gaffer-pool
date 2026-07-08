@@ -64,7 +64,7 @@ On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia walle
 
 ### 3. Pears — P2P pool sync
 
-The pool is a **signed, append-only Hypercore log on disk** (a Pears building block) — tamper-evident and it **survives a restart** (a restarted peer prints `resuming persistent Hypercore pool log — N entries`) — synced between devices over **Hyperswarm** (another Pears block, not WebRTC): peers join a shared topic, no server. Each peer holds its own keys, records a **signed** stake in the log, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. The losing side then pays the winner directly in USDt from their own wallet.
+Each peer keeps the pool as a **signed, append-only Hypercore log on disk** (a Pears building block) — tamper-evident and it **survives a restart** (a restarted peer prints `resuming persistent Hypercore pool log — N entries` and won't re-settle). Peers discover each other over **Hyperswarm** (another Pears block, not WebRTC) on a shared topic — no server — and sync events into their logs. Each peer holds its own keys, records a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. The losing side then pays the winner directly in USDt from their own wallet (honor-based today; an escrow contract is on the roadmap). *(True multi-writer replication via Autobase, and running under `pear run` / pear-runtime, are the next Pears steps.)*
 
 Run two peers (two terminals or two devices), same pool code:
 

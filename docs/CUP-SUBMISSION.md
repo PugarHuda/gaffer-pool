@@ -41,7 +41,7 @@ Requires **Node ≥ 22** (Windows/PowerShell friendly). Public repo: [github.com
 npm install
 npm run demo:analyst   # QVAC: on-device cited analysis
 npm run demo:pool      # WDK: self-custody stakes, AI fair-odds + USDt settlement
-npm run pool:p2p -- <code> <name> <HOME|DRAW|AWAY> [--result R] [--edge]   # Pears: peer sync
+npm run pool:p2p -- <code> <name> <OUTCOME> --odds <N> [--lay] [--result R] [--edge]   # Pears: peer sync
 npm run pool:wallet    # print wallets to fund + on-chain runbook
 npm start              # on-device Gaffer chat web UI
 ```
@@ -54,6 +54,19 @@ Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs 
 - The on-chain proof uses a **test USDt we deployed ourselves** (6 decimals) — Tether doesn't issue test-USDt on Sepolia, so we're honest about that; the mechanism is **identical** to real USDt.
 - The P2P demo runs **two peers on one machine** over the real Hyperswarm DHT — the network is real, the two devices are simulated side by side.
 - The **per-peer edge** uses a smaller **Qwen3-1.7B on CPU** so two peers can share one GPU; the standalone analyst uses the full Qwen3-4B.
+- Settlement is **self-custodial but honor-based**: each side's stake is *signed*, not *escrowed*, so nothing yet forces a loser to pay. Locking funds in an **escrow contract** (and true multi-writer replication via **Autobase** + running under `pear run` / **pear-runtime**) are the clear next steps.
+
+## Reused work (disclosure)
+
+Per the Cup rules, here's what predates the event: the **on-device QVAC plumbing** (the `@qvac/sdk` engine wrapper, model loading, the RAG ingest/search pipeline, the audit logger, and the Electron/web server shell) is **reused from our own earlier project** — a health assistant. Everything that makes this **Gaffer Pool** was **built during the event**: the football corpus and analyst persona, the standings dashboard and `/api/teams`, the entire **WDK** money layer (wallets, fixed-odds back/lay, USDt settlement, the on-chain deploy/mint/settle), the **Pears** pool (Hypercore log + Hyperswarm sync + 2-of-2 co-signing), the per-peer edge, and all the removal of the old health surface. Judge the event-window commits.
+
+## Dependencies & third-party parts
+
+- **AI (on-device):** `@qvac/sdk`; models Qwen3-4B, Qwen3-1.7B, GTE-large (and Whisper/Supertonic/OCR for the optional voice path) — all run locally, no cloud AI.
+- **Wallet:** `@tetherto/wdk`, `@tetherto/wdk-wallet-evm`.
+- **P2P:** `hyperswarm`, `hypercore`, `corestore`, `hypercore-crypto`, `b4a`.
+- **Chain (testnet only):** a public Sepolia RPC (`ethereum-sepolia-rpc.publicnode.com`) for broadcasting; a **test USDt ERC-20 we deployed ourselves**. `viem` + `solc` were used **once, dev-only** (not shipped deps) to deploy/mint the test token.
+- **Misc:** `qrcode`, Electron/electron-forge (desktop shell). Language: Node ≥22, plain browser JS (no build step).
 
 ## Real use of tracks
 

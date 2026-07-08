@@ -61,7 +61,7 @@ const store = new Corestore(join(".gaffer-pool", `${poolCode}-${name.toLowerCase
 const poolLog = store.get({ name: "pool", valueEncoding: "json" });
 await poolLog.ready();
 const seen = new Set();
-const evKey = (ev) => ev.t === "stake" ? `s:${ev.address}` : `r:${ev.by}`;
+const evKey = (ev) => ev.t === "stake" ? `s:${ev.address}` : ev.t === "result" ? `r:${ev.by}` : `x:${ev.by}`;
 async function persist(ev) {           // append once; dedupe by event key
   if (seen.has(evKey(ev))) return;
   seen.add(evKey(ev));
@@ -70,10 +70,12 @@ async function persist(ev) {           // append once; dedupe by event key
 function absorb(ev) {                   // fold one event into in-memory state
   if (ev.t === "stake") stakes.set(ev.address, { name: ev.name, address: ev.address, role: ev.role, outcome: ev.outcome, odds: ev.odds, stake: ev.stake });
   else if (ev.t === "result") { resultSigs.set(ev.by, { result: ev.result, sig: ev.sig }); if (ev.by === name) attested = true; }
+  else if (ev.t === "settled") settled = true;   // so a restart never re-settles (no double-pay)
 }
 if (poolLog.length > 0) {              // resume: replay the durable log from disk
   for (let i = 0; i < poolLog.length; i++) { const ev = await poolLog.get(i); seen.add(evKey(ev)); absorb(ev); }
   console.log(`♻️  resuming persistent Hypercore pool log — ${poolLog.length} entries on disk`);
+  if (settled) { console.log("   this bet is already settled (recorded on disk) — nothing to do."); process.exit(0); }
 }
 
 // Optional: each peer runs its OWN on-device Gaffer edge before staking. Small
@@ -153,6 +155,7 @@ async function maybeSettle(result) {
   const agreed = sigs.length >= 2 && sigs.every((s) => s.result === result);
   if (stakes.size < 2 || !agreed) return;
   settled = true;
+  await persist({ t: "settled", by: name });   // durable marker: never re-settle after a restart
 
   // A fixed-odds bet: one back + one lay on the same outcome & odds. The odds
   // set the money — a winning back is paid the layer's liability = stake×(odds−1).
@@ -172,7 +175,8 @@ async function maybeSettle(result) {
   console.log(`\n🏁 Result ${result} (${OUTCOMES[result]}) — co-signed 2/2.`);
   console.log(`   Bet: back ${backer.outcome} @ ${price}× for ${stake} USDt → ${winner.name} wins ${backerWins ? `${stake + liability} USDt (stake ${stake} + ${liability})` : `${stake} USDt`}.`);
 
-  // Trustless settlement: if I lost, I pay the winner the odds-driven amount.
+  // Self-custodial settlement: if I lost, I pay the winner the odds-driven amount
+  // directly (honor-based — stakes are signed, not escrowed; escrow is the roadmap).
   if (loser.address === myAddress) {
     const opts = { token: USDT, recipient: winner.address, amount: units(amount) };
     if (process.env.POOL_ONCHAIN === "1") {

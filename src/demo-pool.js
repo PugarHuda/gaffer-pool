@@ -1,4 +1,4 @@
-// Gaffer Pool — a trustless P2P football prediction pool.
+// Gaffer Pool — a self-custodial football prediction pool.
 //   QVAC (on-device AI) gives each player a private analytical edge.
 //   WDK (self-custodial wallets) holds each player's own keys and settles the
 //   pot wallet-to-wallet in USDt — no bookmaker, no house, no cloud.
@@ -47,7 +47,9 @@ async function makePlayer(name, seedEnv) {
 const MATCH = "Real Madrid vs Manchester City — Champions League 2nd leg";
 const OUTCOMES = { HOME: "Real Madrid win", DRAW: "Draw", AWAY: "Manchester City win" };
 
-// Trustless settlement: `from` pays `to` `amountUsdt` directly in USDt via WDK.
+// Self-custodial settlement: `from` pays `to` `amountUsdt` directly in USDt via
+// WDK. Honor-based for now (each side's stake is signed, not escrowed) — locking
+// funds in an escrow contract is the roadmap.
 // Broadcasts on Sepolia when POOL_ONCHAIN=1, else prints the signed intent.
 async function settle(from, to, amountUsdt) {
   const opts = { token: USDT, recipient: to.address, amount: units(amountUsdt) };
@@ -126,7 +128,7 @@ async function main() {
   const amount = backerWins ? liability : STAKE;    // odds-driven when the back wins
   console.log(`\n🏁 Result: ${result} (${OUTCOMES[result]}). ${to.name} wins the bet — collects ${backerWins ? `${payout} USDt (stake ${STAKE} + ${liability} at ${price}×)` : `${STAKE} USDt`}.`);
 
-  // --- 5. Trustless settlement: the loser pays the winner directly in USDt. ---
+  // --- 5. Self-custodial settlement: the loser pays the winner directly in USDt. ---
   console.log(`\n🤝 Settlement (no house):`);
   await settle(from, to, amount);
   console.log(`\n✅ Bet settled at Gaffer's odds — keys stayed with their owners, nothing left the devices.`);
