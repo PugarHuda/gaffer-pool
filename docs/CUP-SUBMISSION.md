@@ -4,6 +4,7 @@
 
 > **Entering track:** **WDK (Wallets)** — for the 1,000 USD₮ track prize. Gaffer Pool genuinely uses **all three** tracks (QVAC + WDK + Pears), so it also competes for the 5,000 USD₮ **Cup Champion** (best across all tracks). WDK is our headline: the money layer is fully self-custodial and we broadcast a **real, verifiable USD₮ settlement on-chain** (Sepolia) — see "What's verifiable".
 > **Nation:** Indonesia 🇮🇩 · **Repo:** https://github.com/PugarHuda/gaffer-pool · **Video:** _unlisted YouTube (add link on submit)_
+> **Announcement (X):** https://x.com/BangDropID/status/2074995505982267850
 
 ## Elevator pitch
 

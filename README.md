@@ -122,6 +122,7 @@ Combining all three is the Cup Champion angle: one football product, three track
 - **Test USDt token** (6 decimals, public mint): [`0xd7e2Bc5F…198e6B`](https://sepolia.etherscan.io/token/0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B)
 - **Player wallets** (watch the USDt balances move): [Alice](https://sepolia.etherscan.io/address/0x2A6a252a5749D540Cc467F1c02A211195219693B) · [Bob](https://sepolia.etherscan.io/address/0x5c80386B03E0ef74634cCEDe55c0440275b3A268)
 - **Docs:** [submission writeup](docs/CUP-SUBMISSION.md) · [demo video script](docs/CUP-DEMO-VIDEO-SCRIPT.md)
+- **Announcement (X):** [@BangDropID](https://x.com/BangDropID/status/2074995505982267850)
 
 ---
 
