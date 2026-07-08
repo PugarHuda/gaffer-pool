@@ -6,7 +6,7 @@ import WDK from "@tetherto/wdk";
 import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
 
 const RPC = process.env.POOL_RPC || "https://ethereum-sepolia-rpc.publicnode.com";
-const USDT = process.env.POOL_USDT || "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+const USDT = process.env.POOL_USDT || "0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B";
 
 async function addr(name, envKey) {
   const provided = process.env[envKey];

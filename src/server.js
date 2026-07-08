@@ -20,7 +20,7 @@ import WDK from "@tetherto/wdk";
 import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 
 // --- Gaffer Pool (fixed-odds bet, self-custodial WDK settlement) — mirrors demo-pool.js ---
-const USDT = process.env.POOL_USDT || "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+const USDT = process.env.POOL_USDT || "0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B";
 const USDT_DECIMALS = 6;
 const unitsUsdt = (n) => BigInt(Math.round(n * 10 ** USDT_DECIMALS)).toString();
 const OUTCOMES = { HOME: "Real Madrid win", DRAW: "Draw", AWAY: "Manchester City win" };

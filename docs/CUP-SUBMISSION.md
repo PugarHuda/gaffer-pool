@@ -29,7 +29,7 @@ The AI is each player's private advisor, the money layer is self-custodial, the 
 
 ## What's verifiable right now
 
-- **Real on-chain USDt settlement (Sepolia):** a loser's WDK wallet signed and broadcast a USDt ERC-20 transfer to the winner — [tx `0xf11cdb…`](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc), **Status: Success**. No operator in the middle — the WDK key alone moved the money.
+- **Real on-chain USDt settlement (Sepolia):** the losing WDK wallet signs and broadcasts a USDt ERC-20 transfer to the winner — **the AI's odds set the amount**. A 5× back/lay settled for **40 USDt**: [tx `0x328726…`](https://sepolia.etherscan.io/tx/0x32872699055513e9eed579cfb667bae1634129ae9261bab174984f1387ad96b4), **Status: Success** (balances moved Alice +40 / Bob −40). No operator in the middle — the WDK key alone moved the money.
 - **Persistent P2P pool:** restart a peer and it prints `resuming persistent Hypercore pool log — N entries` — the state lived on disk, not a server.
 - **Cited on-device answers:** `demo:analyst` streams answers with `[doc: …]` citations and live TTFT/tokens/tok-s stats, all local.
 

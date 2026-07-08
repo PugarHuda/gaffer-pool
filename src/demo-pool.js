@@ -18,7 +18,7 @@ import { AuditLogger } from "./audit-logger.js";
 const log = new AuditLogger("artifacts/audit-log.jsonl");
 const RPC = process.env.POOL_RPC || "https://ethereum-sepolia-rpc.publicnode.com";
 // A test ERC-20 standing in for USDt on Sepolia. Override with the real one.
-const USDT = process.env.POOL_USDT || "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+const USDT = process.env.POOL_USDT || "0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B";
 const USDT_DECIMALS = 6;
 const STAKE = 10; // USDt each
 const units = (n) => BigInt(Math.round(n * 10 ** USDT_DECIMALS)).toString();

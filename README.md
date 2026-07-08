@@ -56,8 +56,11 @@ Gaffer turns its edge into **money**: it estimates each outcome's probability on
 
 On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia wallets to broadcast for real. By default it prints the signed settlement intent, so it runs **anywhere with no faucet**. `npm run pool:wallet` prints the wallets to fund and the exact runbook.
 
-**Verified on-chain (Sepolia): a real USDt settlement.** The loser's self-custodial WDK wallet signed and broadcast a **USDt ERC-20 transfer** to the winner —
-[settlement tx `0xf11cdb…`](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc) (status: success). After it, on-chain balances read Alice 10 USDt / Bob 10 USDt. Token: [`0xd7e2Bc5F…198e6B`](https://sepolia.etherscan.io/token/0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B) (a test USDt we deployed for the demo, 6 decimals). No operator in the middle — the WDK key alone moved the money.
+**Verified on-chain (Sepolia): real USDt settlements.** The losing WDK wallet signs and broadcasts a **USDt ERC-20 transfer** to the winner — no operator in the middle, the WDK key alone moves the money. Two verified settlements:
+- **Odds-driven back/lay** (`POOL_ONCHAIN=1 npm run demo:pool`): a 5× back settled for **40 USDt** — [tx `0x328726…`](https://sepolia.etherscan.io/tx/0x32872699055513e9eed579cfb667bae1634129ae9261bab174984f1387ad96b4) (success, block 11228512); balances moved Alice +40 / Bob −40. This is the AI's odds driving the amount.
+- **Earlier flat settlement** — [tx `0xf11cdb…`](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc) (success).
+
+Token: [`0xd7e2Bc5F…198e6B`](https://sepolia.etherscan.io/token/0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B) — a test USDt we deployed (6 decimals, public `mint`), the default `POOL_USDT` so `POOL_ONCHAIN=1` works out of the box (fund the loser's wallet with Sepolia ETH + mint a little USDt via `npm run pool:wallet`).
 
 ### 3. Pears — P2P pool sync
 
@@ -145,7 +148,7 @@ Useful env knobs:
 ## Status / what's next
 
 - **QVAC analyst** — working. `npm run demo:analyst` verified.
-- **WDK stakes + settlement** — working. `npm run demo:pool` verified; a real **USDt** settlement was broadcast on Sepolia via WDK self-custody ([tx](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc)).
+- **WDK stakes + settlement** — working. `npm run demo:pool` verified; a real odds-driven **USDt** back/lay settlement (40 USDt at 5×) was broadcast on Sepolia via WDK self-custody ([tx `0x328726…`](https://sepolia.etherscan.io/tx/0x32872699055513e9eed579cfb667bae1634129ae9261bab174984f1387ad96b4)).
 - **Pears P2P sync** — working. `npm run pool:p2p` verified: the pool is a signed Hypercore log on disk (survives restarts), two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
 - **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
 - **Desktop/web UI** — `npm start` serves the on-device Gaffer chat (football corpus, cited answers) on the LAN; verified. Some deeper panels from the reused infrastructure are hidden pending a fuller reskin.
