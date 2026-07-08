@@ -21,16 +21,21 @@ import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 import { loadModel, completion, QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import { AuditLogger } from "./audit-logger.js";
 
-const [poolCode, name, pick] = process.argv.slice(2);
+const [poolCode, name, outcome] = process.argv.slice(2);
+const role = process.argv.includes("--lay") ? "lay" : "back";
+const oddsIdx = process.argv.indexOf("--odds");
+const odds = oddsIdx > -1 ? Number(process.argv[oddsIdx + 1]) : NaN;
 const resultFlagIdx = process.argv.indexOf("--result");
 const proposedResult = resultFlagIdx > -1 ? process.argv[resultFlagIdx + 1] : null;
 const wantEdge = process.argv.includes("--edge");
-if (!poolCode || !name || !pick) {
-  console.error("Usage: node src/pool-p2p.js <poolCode> <name> <HOME|DRAW|AWAY> [--result <R>]");
-  process.exit(1);
-}
 
 const OUTCOMES = { HOME: "Real Madrid win", DRAW: "Draw", AWAY: "Manchester City win" };
+if (!poolCode || !name || !OUTCOMES[outcome] || !(odds > 1)) {
+  console.error("Usage: node src/pool-p2p.js <poolCode> <name> <HOME|DRAW|AWAY> --odds <N> [--lay] [--result <R>] [--edge]");
+  console.error("  A fixed-odds bet: one peer BACKS the outcome, the other LAYS it (both pass the same outcome & odds).");
+  console.error("  Backer: MATCH1 Alice AWAY --odds 5 --result AWAY   |   Layer: MATCH1 Bob AWAY --odds 5 --lay");
+  process.exit(1);
+}
 const MATCH = "Real Madrid vs Manchester City — Champions League 2nd leg";
 const STAKE = 10, USDT_DECIMALS = 6;
 const USDT = process.env.POOL_USDT || "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
@@ -63,7 +68,7 @@ async function persist(ev) {           // append once; dedupe by event key
   await poolLog.append(ev);
 }
 function absorb(ev) {                   // fold one event into in-memory state
-  if (ev.t === "stake") stakes.set(ev.address, { name: ev.name, address: ev.address, pick: ev.pick, stake: ev.stake });
+  if (ev.t === "stake") stakes.set(ev.address, { name: ev.name, address: ev.address, role: ev.role, outcome: ev.outcome, odds: ev.odds, stake: ev.stake });
   else if (ev.t === "result") { resultSigs.set(ev.by, { result: ev.result, sig: ev.sig }); if (ev.by === name) attested = true; }
 }
 if (poolLog.length > 0) {              // resume: replay the durable log from disk
@@ -93,11 +98,11 @@ Real Madrid: last-5 W W D W L, xG 9.8, right-back injury doubt, high line — da
   return raw.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*?<\/think>/i, "").replace(/<\/?think>/gi, "").trim();
 }
 
-const stakeMsg = () => `Gaffer Pool | ${MATCH} | pick=${pick} | stake=${STAKE} USDt | ${myAddress}`;
+const stakeMsg = () => `Gaffer Pool | ${MATCH} | ${role} ${outcome} @ ${odds}x | stake=${STAKE} USDt | ${myAddress}`;
 const resultMsg = (r) => `Gaffer Pool RESULT | ${MATCH} | result=${r}`;
 
 console.log(`\n⚽ ${name} joined Gaffer Pool  (${MATCH})`);
-console.log(`   wallet ${myAddress}  ·  pick ${pick} (${OUTCOMES[pick]})  ·  stake ${STAKE} USDt`);
+console.log(`   wallet ${myAddress}  ·  ${role.toUpperCase()} ${outcome} (${OUTCOMES[outcome]}) @ ${odds}×  ·  stake ${STAKE} USDt`);
 console.log(`   syncing over Hyperswarm (Pears) — no server…\n`);
 
 if (wantEdge) {
@@ -122,8 +127,8 @@ function broadcast(obj) {
 
 async function recordMyStake() {
   const sig = await account.sign(stakeMsg());
-  const ev = { t: "stake", name, address: myAddress, pick, stake: STAKE, sig };
-  stakes.set(myAddress, { name, address: myAddress, pick, stake: STAKE });
+  const ev = { t: "stake", name, address: myAddress, role, outcome, odds, stake: STAKE, sig };
+  stakes.set(myAddress, { name, address: myAddress, role, outcome, odds, stake: STAKE });
   await persist(ev);                   // durable, signed record on disk
   return ev;
 }
@@ -149,28 +154,39 @@ async function maybeSettle(result) {
   if (stakes.size < 2 || !agreed) return;
   settled = true;
 
+  // A fixed-odds bet: one back + one lay on the same outcome & odds. The odds
+  // set the money — a winning back is paid the layer's liability = stake×(odds−1).
   const players = [...stakes.values()];
-  const pot = players.length * STAKE;
-  const winners = players.filter((p) => p.pick === result);
-  console.log(`\n🏁 Result ${result} (${OUTCOMES[result]}) — co-signed 2/2. Pot ${pot} USDt.`);
-  if (!winners.length) { console.log("No winner — stakes roll over."); return finish(); }
-  const winner = winners[0];
+  const backer = players.find((p) => p.role === "back");
+  const layer = players.find((p) => p.role === "lay");
+  if (!backer || !layer || backer.outcome !== layer.outcome || backer.odds !== layer.odds) {
+    console.log("\n⚠ Bet terms don't match — need one BACK and one LAY on the same outcome & odds. Void.");
+    return finish();
+  }
+  const price = backer.odds, stake = backer.stake;
+  const liability = +(stake * (price - 1)).toFixed(2);
+  const backerWins = result === backer.outcome;
+  const winner = backerWins ? backer : layer;
+  const loser = backerWins ? layer : backer;
+  const amount = backerWins ? liability : stake;   // odds-driven when the back wins
+  console.log(`\n🏁 Result ${result} (${OUTCOMES[result]}) — co-signed 2/2.`);
+  console.log(`   Bet: back ${backer.outcome} @ ${price}× for ${stake} USDt → ${winner.name} wins ${backerWins ? `${stake + liability} USDt (stake ${stake} + ${liability})` : `${stake} USDt`}.`);
 
-  // Trustless settlement: if I lost, I pay the winner directly from my wallet.
-  if (winner.address !== myAddress) {
-    const opts = { token: USDT, recipient: winner.address, amount: units(STAKE) };
+  // Trustless settlement: if I lost, I pay the winner the odds-driven amount.
+  if (loser.address === myAddress) {
+    const opts = { token: USDT, recipient: winner.address, amount: units(amount) };
     if (process.env.POOL_ONCHAIN === "1") {
       const tx = await account.transfer(opts);
-      console.log(`🤝 ${name} → ${winner.name}: ${STAKE} USDt (tx ${tx?.hash ?? tx})`);
-      log.record({ event: "settlement", from: name, to: winner.name, usdt: STAKE, tx: tx?.hash ?? String(tx), onchain: true });
+      console.log(`🤝 ${name} → ${winner.name}: ${amount} USDt (tx ${tx?.hash ?? tx})`);
+      log.record({ event: "settlement", from: name, to: winner.name, usdt: amount, odds: price, tx: tx?.hash ?? String(tx), onchain: true });
     } else {
       const tx = await WalletAccountEvm._getTransferTransaction(opts);
-      console.log(`🤝 ${name} pays ${winner.name} ${STAKE} USDt — signed ERC-20 transfer ready:`);
+      console.log(`🤝 ${name} pays ${winner.name} ${amount} USDt — signed ERC-20 transfer ready:`);
       console.log(`     to(token) ${tx.to}  data ${tx.data.slice(0, 26)}…  (set POOL_ONCHAIN=1 to broadcast)`);
-      log.record({ event: "settlement", from: name, to: winner.name, usdt: STAKE, tokenTx: tx, onchain: false });
+      log.record({ event: "settlement", from: name, to: winner.name, usdt: amount, odds: price, tokenTx: tx, onchain: false });
     }
   } else {
-    console.log(`🏆 ${winner.name} wins the ${pot} USDt pot — paid directly by peers, keys never left the device.`);
+    console.log(`🏆 ${winner.name} wins ${amount} USDt from ${loser.name} at Gaffer's ${price}× — paid directly, keys never left the device.`);
   }
   finish();
 }
@@ -198,10 +214,10 @@ swarm.on("connection", async (conn) => {
       let msg; try { msg = JSON.parse(line); } catch { continue; }
 
       if (msg.t === "stake" && !stakes.has(msg.address)) {
-        stakes.set(msg.address, { name: msg.name, address: msg.address, pick: msg.pick, stake: msg.stake });
+        stakes.set(msg.address, { name: msg.name, address: msg.address, role: msg.role, outcome: msg.outcome, odds: msg.odds, stake: msg.stake });
         await persist(msg);            // record the peer's signed stake on disk
-        console.log(`📥 ${msg.name} staked ${msg.stake} USDt on ${msg.pick}  (${msg.address.slice(0, 10)}…)`);
-        log.record({ event: "peer-stake", name: msg.name, address: msg.address, pick: msg.pick, stake: msg.stake });
+        console.log(`📥 ${msg.name} ${msg.role}s ${msg.outcome} @ ${msg.odds}× (${msg.stake} USDt)  (${msg.address.slice(0, 10)}…)`);
+        log.record({ event: "peer-stake", name: msg.name, address: msg.address, role: msg.role, outcome: msg.outcome, odds: msg.odds, stake: msg.stake });
         // Once both are in, the proposer kicks off the co-signed result.
         if (stakes.size >= 2 && proposedResult) await attest(proposedResult);
       } else if (msg.t === "result") {

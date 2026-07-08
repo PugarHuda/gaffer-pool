@@ -56,11 +56,12 @@ to his timing and runs beyond the striker [doc: player-bellingham.txt].
 🧠 asking Gaffer on this device (Qwen3-1.7B, CPU)…
    Gaffer: I lean towards a home win for Real Madrid …
 🔗 announced on the pool topic — waiting for the other player…
-📥 Bob staked 10 USDt on HOME  (0xcF2Bd59b…)
+♻️  resuming persistent Hypercore pool log — 1 entries on disk
+📥 Bob lays AWAY @ 5× (10 USDt)  (0x5c80386B…)
 ✍️  Alice co-signed result = AWAY
 📥 Bob co-signed result = AWAY
-🏁 Result AWAY (Manchester City win) — co-signed 2/2. Pot 20 USDt.
-🏆 Alice wins the 20 USDt pot — paid directly by peers, keys never left the device.
+🏁 Result AWAY (Manchester City win) — co-signed 2/2.
+🏆 Alice wins 40 USDt from Bob at Gaffer's 5× — paid directly, keys never left the device.
 ```
 
 **Real on-chain proof** (browser): Sepolia Etherscan, USDt settlement tx `0xf11cdb…`, **Status: Success** — a WDK self-custody USDt transfer that actually happened (Alice ends holding 10 USDt on-chain).
@@ -71,10 +72,10 @@ to his timing and runs beyond the striker [doc: player-bellingham.txt].
 npm run demo:analyst
 # T2
 npm run demo:pool
-# T3 (proposer)
-npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY --edge
-# T4 (other player)
-npm run pool:p2p -- MATCH42 Bob HOME --edge
+# T3 (backs AWAY at 5×)
+npm run pool:p2p -- MATCH42 Alice AWAY --odds 5 --result AWAY --edge
+# T4 (lays it)
+npm run pool:p2p -- MATCH42 Bob AWAY --odds 5 --lay --edge
 ```
 
 ## Closing line (verbatim)

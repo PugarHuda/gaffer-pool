@@ -69,20 +69,21 @@ The pool is a **signed, append-only Hypercore log on disk** (a Pears building bl
 Run two peers (two terminals or two devices), same pool code:
 
 ```bash
-npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY --edge   # proposer
-npm run pool:p2p -- MATCH42 Bob   HOME --edge                 # other player
+npm run pool:p2p -- MATCH42 Alice AWAY --odds 5 --result AWAY --edge   # BACKS AWAY at 5×
+npm run pool:p2p -- MATCH42 Bob   AWAY --odds 5 --lay --edge           # LAYS it
 ```
 
-With `--edge`, each peer first runs its **own** on-device Gaffer (Qwen3-1.7B on CPU, so two peers share one GPU) and prints its read of the match before staking — so the AI edge lives inside every peer, not on a server.
+It's the same fixed-odds bet as `demo:pool`: one peer **backs** the outcome at Gaffer's odds, the other **lays** it, and the losing side pays the odds-driven amount (a winning back at 5× collects `stake × 5`). With `--edge`, each peer first runs its **own** on-device Gaffer (Qwen3-1.7B on CPU, so two peers share one GPU) and prints its read before staking — the AI edge lives inside every peer, not on a server.
 
 They discover each other over the Hyperswarm DHT, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer:
 
 ```
-📥 Bob staked 10 USDt on HOME  (0x0e0152b7…)
+📥 Bob lays AWAY @ 5× (10 USDt)  (0x5c80386B…)
 ✍️  Alice co-signed result = AWAY
 📥 Bob co-signed result = AWAY
-🏁 Result AWAY — co-signed 2/2. Pot 20 USDt.
-🏆 Alice wins the 20 USDt pot — paid directly by peers, keys never left the device.
+🏁 Result AWAY — co-signed 2/2.
+   Bet: back AWAY @ 5× for 10 USDt → Alice wins 50 USDt (stake 10 + 40).
+🏆 Alice wins 40 USDt from Bob at Gaffer's 5× — paid directly, keys never left the device.
 ```
 
 ---
@@ -120,7 +121,7 @@ Requires **Node ≥ 22**. Windows/PowerShell friendly.
 npm install
 npm run demo:analyst     # QVAC: on-device cited analysis
 npm run demo:pool        # WDK: self-custody stakes, AI fair-odds + USDt settlement
-npm run pool:p2p -- <code> <name> <HOME|DRAW|AWAY> [--result R]   # Pears: peer sync
+npm run pool:p2p -- <code> <name> <HOME|DRAW|AWAY> --odds <N> [--lay] [--result R]   # Pears: peer sync
 npm run pool:wallet      # print wallets to fund + on-chain runbook
 npm start                # on-device Gaffer chat web UI (https://localhost:8787)
 ```
