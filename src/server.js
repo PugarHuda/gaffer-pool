@@ -257,8 +257,9 @@ async function handler(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/voice") {
     const chunks = [];
+    req.on("error", () => {});
     req.on("data", (c) => chunks.push(c));
-    req.on("end", async () => {
+    req.on("end", () => {
       const wav = Buffer.concat(chunks);
       if (wav.length < 1000) {
         res.writeHead(400, { "content-type": "application/json" });
@@ -266,23 +267,23 @@ async function handler(req, res) {
       }
       const tmp = join(tmpdir(), `gaffer-voice-${Date.now()}.wav`);
       writeFileSync(tmp, wav);
-      try {
-        const modelId = await getStt();
-        const heard = await transcribe({ modelId, audioChunk: tmp });
-        // Whisper may return a string, a {text}, or an array of segments.
-        let text = "";
-        if (typeof heard === "string") text = heard;
-        else if (Array.isArray(heard)) text = heard.map((s) => s.text ?? "").join("");
-        else text = heard?.text ?? "";
-        text = text.replace(/\[(BLANK_AUDIO|.*?)\]/g, "").trim();
-        res.writeHead(200, { "content-type": "application/json" });
-        res.end(JSON.stringify({ text }));
-      } catch (err) {
-        res.writeHead(500, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: String(err?.message ?? err) }));
-      } finally {
-        try { unlinkSync(tmp); } catch {}
-      }
+      // Serialize through the shared queue so STT never runs concurrently with a
+      // chat/odds inference on the single Bare worker (would crash the GPU).
+      queue = queue
+        .then(async () => {
+          const modelId = await getStt();
+          const heard = await transcribe({ modelId, audioChunk: tmp });
+          // Whisper may return a string, a {text}, or an array of segments.
+          let text = "";
+          if (typeof heard === "string") text = heard;
+          else if (Array.isArray(heard)) text = heard.map((s) => s.text ?? "").join("");
+          else text = heard?.text ?? "";
+          text = text.replace(/\[(BLANK_AUDIO|.*?)\]/g, "").trim();
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ text }));
+        })
+        .catch((err) => { res.writeHead(500, { "content-type": "application/json" }); res.end(JSON.stringify({ error: String(err?.message ?? err) })); })
+        .finally(() => { try { unlinkSync(tmp); } catch {} });
     });
     return;
   }
@@ -388,54 +389,13 @@ async function handler(req, res) {
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/api/import-csv") {
-    const member = (url.searchParams.get("member") || "").slice(0, 40);
-    const relation = url.searchParams.get("relation") === "self" ? "self" : "family";
-    let body = "";
-    req.on("data", (c) => (body += c));
-    req.on("end", async () => {
-      try {
-        if (!member) throw new Error("member query param required");
-        // CSV rows: date,metric,value (header optional). metric in glucose|hba1c|ldl|chol|bp
-        const map = { glucose: "Fasting glucose", hba1c: "HbA1c", ldl: "LDL", chol: "Total cholesterol", bp: "Blood pressure" };
-        const unit = { glucose: "mg/dL", hba1c: "%", ldl: "mg/dL", chol: "mg/dL", bp: "mmHg" };
-        const byDate = {};
-        for (const line of body.split(/\r?\n/)) {
-          const parts = line.split(",").map((s) => s.trim());
-          if (parts.length < 3) continue;
-          const [date, metricRaw, value] = parts;
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue; // skips header
-          const metric = metricRaw.toLowerCase();
-          if (!map[metric]) continue;
-          (byDate[date] ??= []).push(`${map[metric]}: ${value} ${unit[metric]}`);
-        }
-        const dates = Object.keys(byDate);
-        if (!dates.length) throw new Error("no valid rows (expected: date,metric,value)");
-        let count = 0;
-        for (const date of dates) {
-          const docText = [`Patient: ${member}`, `Date: ${date}`, relation === "self" ? "Relation: self" : null, ...byDate[date]].filter(Boolean).join("\n");
-          const safe = `csv-${member}-${date}`.replace(/[^a-z0-9._-]+/gi, "-");
-          mkdirSync("data/records", { recursive: true });
-          writeFileSync(join("data/records", `${safe}.txt`), docText);
-          await engine.ingestDocument({ source: safe, text: docText });
-          count++;
-        }
-        await engine.reindex();
-        res.writeHead(200, { "content-type": "application/json" });
-        res.end(JSON.stringify({ ok: true, imported: count, dates }));
-      } catch (err) {
-        res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ ok: false, error: String(err?.message ?? err) }));
-      }
-    });
-    return;
-  }
-
   if (req.method === "POST" && url.pathname === "/api/upload-image") {
     const member = (url.searchParams.get("member") || "").slice(0, 40);
     const relation = url.searchParams.get("relation") === "self" ? "self" : "family";
     const chunks = [];
-    req.on("data", (c) => chunks.push(c));
+    let imgBytes = 0;
+    req.on("error", () => {});
+    req.on("data", (c) => { chunks.push(c); imgBytes += c.length; if (imgBytes > 15_000_000) req.destroy(); });
     req.on("end", async () => {
       const img = Buffer.concat(chunks);
       if (img.length < 200) { res.writeHead(400, { "content-type": "application/json" }); return res.end(JSON.stringify({ ok: false, error: "image too small" })); }
@@ -486,29 +446,25 @@ async function handler(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/ingest") {
     let body = "";
-    req.on("data", (c) => (body += c));
-    req.on("end", async () => {
-      try {
+    req.on("error", () => {});
+    req.on("data", (c) => { body += c; if (body.length > 200_000) req.destroy(); });
+    req.on("end", () => {
+      // Serialize the embed + IVF reindex through the queue so it never races a
+      // concurrent chat ragSearch on the same workspace.
+      queue = queue.then(async () => {
         const { source, text, member, relation } = JSON.parse(body);
         if (!source || !text) throw new Error("source and text required");
-        // If a member name is given, ensure the doc is attributable on the
-        // dashboard (it parses "Patient: <name>").
         let body2 = String(text).slice(0, 50_000);
         if (member && !/Patient:/i.test(body2)) body2 = `Patient: ${String(member).slice(0, 40)}\n${body2}`;
         if (relation === "self" && !/Relation:/i.test(body2)) body2 = `Relation: self\n${body2}`;
         const safe = String(source).slice(0, 80).replace(/[^a-z0-9._-]+/gi, "-");
-        // Persist to data/records so the dashboard + chat both see it (real-time).
         mkdirSync("data/records", { recursive: true });
         writeFileSync(join("data/records", safe.endsWith(".txt") ? safe : `${safe}.txt`), body2);
-        // Index into the RAG workspace for Q&A.
         await engine.ingestDocument({ source: safe, text: body2 });
         await engine.reindex();
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
-      } catch (err) {
-        res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ ok: false, error: String(err?.message ?? err) }));
-      }
+      }).catch((err) => { res.writeHead(400, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: false, error: String(err?.message ?? err) })); });
     });
     return;
   }
