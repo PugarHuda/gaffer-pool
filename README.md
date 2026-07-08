@@ -64,7 +64,7 @@ On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia walle
 
 ### 3. Pears — P2P pool sync
 
-Pool state syncs between devices over **Hyperswarm** (the real Pears building block, not WebRTC): peers join a shared topic and gossip the pool directly, no server. Each peer holds its own keys, broadcasts a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. Losers then pay the winner directly in USDt from their own wallet.
+The pool is a **signed, append-only Hypercore log on disk** (a Pears building block) — tamper-evident and it **survives a restart** (a restarted peer prints `resuming persistent Hypercore pool log — N entries`) — synced between devices over **Hyperswarm** (another Pears block, not WebRTC): peers join a shared topic, no server. Each peer holds its own keys, records a **signed** stake in the log, and the match result is agreed by **2-of-2 co-signing** — so no operator decides the outcome. The losing side then pays the winner directly in USDt from their own wallet.
 
 Run two peers (two terminals or two devices), same pool code:
 
@@ -106,7 +106,7 @@ Everything runs on the player's device. The AI never phones home, the keys never
 |-------|------|--------------------------------|
 | **QVAC / Local-AI** | Genuine on-device inference | Qwen3-4B + GTE-large via `@qvac/sdk`, RAG over a local corpus, no cloud/API keys. `npm run demo:analyst`. |
 | **WDK / Wallets** | Self-custodial, real transactions | Per-player seed→EVM wallets, each signs its own stake, settlement is a real USDt ERC-20 `transfer` (`0xa9059cbb…`). `npm run demo:pool`. |
-| **Pears / P2P** | Real P2P building block | Hyperswarm topic gossip for pool state — no server. `npm run pool:p2p`. |
+| **Pears / P2P** | Real P2P building blocks | Pool state is a signed, append-only **Hypercore** log (persists across restarts) synced over **Hyperswarm** — no server. `npm run pool:p2p`. |
 
 Combining all three is the Cup Champion angle: one football product, three tracks, no trusted middle.
 
@@ -140,7 +140,7 @@ Useful env knobs:
 
 - **QVAC analyst** — working. `npm run demo:analyst` verified.
 - **WDK stakes + settlement** — working. `npm run demo:pool` verified; a real **USDt** settlement was broadcast on Sepolia via WDK self-custody ([tx](https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc)).
-- **Pears P2P sync** — working. `npm run pool:p2p` verified: two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
+- **Pears P2P sync** — working. `npm run pool:p2p` verified: the pool is a signed Hypercore log on disk (survives restarts), two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
 - **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
 - **Desktop/web UI** — `npm start` serves the on-device Gaffer chat (football corpus, cited answers) on the LAN; verified. Some deeper panels from the reused infrastructure are hidden pending a fuller reskin.
 

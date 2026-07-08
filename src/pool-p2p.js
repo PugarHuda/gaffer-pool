@@ -1,9 +1,10 @@
 // Gaffer Pool — P2P peer node (Pears track).
-//   Pool state syncs between devices over Hyperswarm (a real Pears building
-//   block, not WebRTC). No server holds the pool: each player is a peer that
-//   holds their own keys (WDK), broadcasts a SIGNED stake, and the match result
-//   is agreed by 2-of-2 co-signing — then losers pay the winner directly in
-//   USDt from their own wallet. No house, no cloud.
+//   The pool is a signed, append-only Hypercore log on disk (a Pears building
+//   block) — so it's tamper-evident and survives restarts — synced between peers
+//   over Hyperswarm (another Pears block, not WebRTC). No server holds the pool:
+//   each player is a peer that holds their own keys (WDK), records a SIGNED stake
+//   in the log, and the match result is agreed by 2-of-2 co-signing — then the
+//   losing side pays the winner directly in USDt from their own wallet. No cloud.
 //
 // Run two peers (two terminals / two devices), same pool code:
 //   node src/pool-p2p.js <poolCode> Alice AWAY --result AWAY
@@ -11,8 +12,10 @@
 // The peer passed --result <R> proposes it once both have staked; both peers
 // co-sign, then settle. Reuse the same POOL_SEED_A/B for stable demo wallets.
 import Hyperswarm from "hyperswarm";
+import Corestore from "corestore";
 import crypto from "hypercore-crypto";
 import b4a from "b4a";
+import { join } from "node:path";
 import WDK from "@tetherto/wdk";
 import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 import { loadModel, completion, QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
@@ -45,6 +48,28 @@ const myAddress = await account.getAddress();
 const stakes = new Map();   // address -> { name, address, pick, stake }
 const resultSigs = new Map(); // signer name -> { result, sig }
 let attested = false, settled = false;
+
+// --- Persistent pool log: a signed, append-only Hypercore on disk (a Pears
+// building block). Every stake/result is recorded here, so the pool survives a
+// restart and is tamper-evident; Hyperswarm below syncs it between peers. ---
+const store = new Corestore(join(".gaffer-pool", `${poolCode}-${name.toLowerCase()}`));
+const poolLog = store.get({ name: "pool", valueEncoding: "json" });
+await poolLog.ready();
+const seen = new Set();
+const evKey = (ev) => ev.t === "stake" ? `s:${ev.address}` : `r:${ev.by}`;
+async function persist(ev) {           // append once; dedupe by event key
+  if (seen.has(evKey(ev))) return;
+  seen.add(evKey(ev));
+  await poolLog.append(ev);
+}
+function absorb(ev) {                   // fold one event into in-memory state
+  if (ev.t === "stake") stakes.set(ev.address, { name: ev.name, address: ev.address, pick: ev.pick, stake: ev.stake });
+  else if (ev.t === "result") { resultSigs.set(ev.by, { result: ev.result, sig: ev.sig }); if (ev.by === name) attested = true; }
+}
+if (poolLog.length > 0) {              // resume: replay the durable log from disk
+  for (let i = 0; i < poolLog.length; i++) { const ev = await poolLog.get(i); seen.add(evKey(ev)); absorb(ev); }
+  console.log(`♻️  resuming persistent Hypercore pool log — ${poolLog.length} entries on disk`);
+}
 
 // Optional: each peer runs its OWN on-device Gaffer edge before staking. Small
 // model on CPU so two peers can share one GPU. Non-fatal — the pool works without it.
@@ -97,16 +122,20 @@ function broadcast(obj) {
 
 async function recordMyStake() {
   const sig = await account.sign(stakeMsg());
+  const ev = { t: "stake", name, address: myAddress, pick, stake: STAKE, sig };
   stakes.set(myAddress, { name, address: myAddress, pick, stake: STAKE });
-  return { t: "stake", name, address: myAddress, pick, stake: STAKE, sig };
+  await persist(ev);                   // durable, signed record on disk
+  return ev;
 }
 
 async function attest(result) {
   if (attested) return;
   attested = true;
   const sig = await account.sign(resultMsg(result));
+  const ev = { t: "result", by: name, result, sig };
   resultSigs.set(name, { result, sig });
-  broadcast({ t: "result", by: name, result, sig });
+  await persist(ev);                   // durable, signed record on disk
+  broadcast(ev);
   console.log(`✍️  ${name} co-signed result = ${result}`);
   log.record({ event: "result-attest", by: name, result, sig });
   maybeSettle(result);
@@ -170,12 +199,14 @@ swarm.on("connection", async (conn) => {
 
       if (msg.t === "stake" && !stakes.has(msg.address)) {
         stakes.set(msg.address, { name: msg.name, address: msg.address, pick: msg.pick, stake: msg.stake });
+        await persist(msg);            // record the peer's signed stake on disk
         console.log(`📥 ${msg.name} staked ${msg.stake} USDt on ${msg.pick}  (${msg.address.slice(0, 10)}…)`);
         log.record({ event: "peer-stake", name: msg.name, address: msg.address, pick: msg.pick, stake: msg.stake });
         // Once both are in, the proposer kicks off the co-signed result.
         if (stakes.size >= 2 && proposedResult) await attest(proposedResult);
       } else if (msg.t === "result") {
         resultSigs.set(msg.by, { result: msg.result, sig: msg.sig });
+        await persist(msg);            // record the peer's co-signature on disk
         console.log(`📥 ${msg.by} co-signed result = ${msg.result}`);
         await attest(msg.result);        // counter-sign, then settle if 2/2
         await maybeSettle(msg.result);
