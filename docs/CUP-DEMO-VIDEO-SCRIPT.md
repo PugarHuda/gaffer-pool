@@ -18,8 +18,8 @@
 | **0:12–0:55** | **T1:** `npm run demo:analyst`. Let one answer stream, ending on the stats line. Highlight the `[doc: …]` citations and the stats. | "First, your private analyst — Qwen3-4B and GTE-large, one hundred percent local through the QVAC SDK. It reads a local football corpus and answers grounded in it, citing the source doc for every claim. First token in about five seconds, then it streams — on-device, no network, no API key." |
 | **0:55–1:05** | Freeze on the analyst answer + stats. | *(let it breathe — show the cited answer and `TTFT 4559 ms \| 228 tokens \| 24.1 tok/s`)* |
 | **1:05–1:15** | **T2:** `npm run demo:pool`. Highlight the two addresses. | "Now the money. No bookmaker holds the pot. Each player has a self-custodial wallet — a seed phrase to an EVM account, via Tether's WDK." |
-| **1:15–1:35** | Highlight the fair-odds line, then the two signed picks. | "Gaffer turns its read into fair, no-house odds — here it makes City fifty percent, so backing them pays two-x, the underdog five-x. Each player signs their own stake with their own key. Nobody signs for them." |
-| **1:35–1:55** | Scroll to settlement. Highlight `data 0xa9059cbb…`. | "When the result's in, the loser pays the winner directly, wallet to wallet, in USDt — a real ERC-20 transfer, there's the calldata, `0xa9059cbb`. No house takes a cut." |
+| **1:15–1:35** | Highlight the fair-odds line, then the back/lay lines. | "Gaffer turns its read into fair, no-house odds — City fifty percent, the away side five-x. So it's a fixed-odds bet: one player *backs* the outcome, the other *lays* it, each signing their own stake with their own key. The odds set the money." |
+| **1:35–1:55** | Scroll to settlement. Highlight `data 0xa9059cbb…`. | "When the result's in, the loser pays the winner exactly the odds-driven amount — here forty USDt on a five-x back — wallet to wallet, a real ERC-20 transfer, there's the calldata, `0xa9059cbb`. No house takes a cut." |
 | **1:55–2:30** | **T3 + T4 split:** run both peers with `--edge`. Show each peer's own `Gaffer:` line, then `📥 … staked`, `✍️ co-signed`, `🏁 co-signed 2/2`, `🏆 … wins the pot`. | "And the pool syncs peer-to-peer — no server. Each device runs its *own* on-device Gaffer, then they find each other over Hyperswarm — the real Pears building block — swap signed stakes, and co-sign the result two-of-two. No operator decides the outcome. Then they settle, directly." |
 | **2:30–2:50** | **Browser:** the Sepolia Etherscan tx page — **Status: Success**, a **USDt** token transfer to the winner. | "And this isn't a mock. Here's a real USDt settlement broadcast from a player's own WDK wallet, on-chain on Sepolia — confirmed, no operator in the middle." |
 | **2:50–3:00** | Title card: **QVAC · WDK · Pears**. | "Your analyst on-device with QVAC, your stakes self-custodial with WDK, your pool peer-to-peer with Pears. Three Tether tracks, one football product — no house, no cloud, your keys." |
@@ -36,18 +36,20 @@ to his timing and runs beyond the striker [doc: player-bellingham.txt].
 [search 358 ms | TTFT 4559 ms | 228 tokens | 24.1 tok/s]
 ```
 
-**WDK fair odds + signed stakes** (`demo:pool`):
+**WDK fair odds + a back/lay bet** (`demo:pool`):
 ```
 📊 Gaffer's fair odds (no house):  HOME 2×  DRAW 3.33×  AWAY 5×
    (from on-device probabilities HOME 50% / DRAW 30% / AWAY 20%)
-  Alice: AWAY @ 5× (fair payout 50.0 USDt) — sig 0xff78aefe…
-  Bob:   HOME @ 2× (fair payout 20.0 USDt) — sig 0x066d74fb…
+
+💸 A fixed-odds bet on AWAY (Manchester City win) at Gaffer's 5× — each side signs:
+  Alice backs AWAY @ 5× — stakes 10 USDt to win 50 USDt  · sig 0x40140bfc…
+  Bob   lays  AWAY @ 5× — escrows 40 USDt against it       · sig 0xc195c625…
 ```
 
-**WDK settlement** — real ERC-20 `transfer` calldata:
+**WDK settlement** — the odds set the amount; real ERC-20 `transfer` calldata:
 ```
-🤝 Settlement — losers pay Alice directly (no house):
-  Bob → Alice: 10 USDt
+🏁 Result: AWAY. Alice wins the bet — collects 50 USDt (stake 10 + 40 at 5×).
+🤝 Bob → Alice: 40 USDt — signed ERC-20 transfer:
      to(token) 0x7169…  data 0xa9059cbb0000000000000000…
 ```
 
