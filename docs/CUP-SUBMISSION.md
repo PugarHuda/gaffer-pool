@@ -2,6 +2,9 @@
 
 **No house, no cloud, your keys — a football prediction game where the AI analyst, the money, and the network all run on your own device.**
 
+> **Entering track:** **WDK (Wallets)** — for the 1,000 USD₮ track prize. Gaffer Pool genuinely uses **all three** tracks (QVAC + WDK + Pears), so it also competes for the 5,000 USD₮ **Cup Champion** (best across all tracks). WDK is our headline: the money layer is fully self-custodial and we broadcast a **real, verifiable USD₮ settlement on-chain** (Sepolia) — see "What's verifiable".
+> **Nation:** Indonesia 🇮🇩 · **Repo:** https://github.com/PugarHuda/gaffer-pool · **Video:** _unlisted YouTube (add link on submit)_
+
 ## Elevator pitch
 
 Friends predict football all the time — and today that means trusting a cloud app with your picks, a bookmaker with your pot, and a server with your data. Gaffer Pool needs none of them. It's a friendly group-tipping game where a private on-device AI analyst gives you the edge, self-custodial USDt stakes settle wallet-to-wallet among friends, and the pool syncs peer-to-peer with no operator in the middle. One football-native product that combines all **three** Tether tracks — QVAC, WDK, and Pears.
