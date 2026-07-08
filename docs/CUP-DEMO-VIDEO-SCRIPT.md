@@ -6,7 +6,7 @@
 - Run each command once first so models are cached (first run downloads; would blow the time budget).
 - Terminals ready: **T1** analyst, **T2** pool, **T3 + T4** two P2P peers side by side, **Browser** open to the Sepolia Etherscan tx (below).
 - Large font. For the P2P beat, arrange T3/T4 split-screen so both peers are visible.
-- The real on-chain settlement to show: `https://sepolia.etherscan.io/tx/0xd8fbc00021589b7ebc425742a0006324514e5d8d2d22aa9c260be5c7e83c3569`
+- The real on-chain USDt settlement to show: `https://sepolia.etherscan.io/tx/0xf11cdbeb3c722c29553f64e0b0d2ff1b468f3c3ddd450462af65ef572a2afdfc` (a USDt ERC-20 transfer, WDK self-custody; after it, Alice holds 10 USDt on-chain)
 
 ---
 
@@ -21,7 +21,7 @@
 | **1:15–1:35** | Highlight the fair-odds line, then the two signed picks. | "Gaffer turns its read into fair, no-house odds — here it makes City fifty percent, so backing them pays two-x, the underdog five-x. Each player signs their own stake with their own key. Nobody signs for them." |
 | **1:35–1:55** | Scroll to settlement. Highlight `data 0xa9059cbb…`. | "When the result's in, the loser pays the winner directly, wallet to wallet, in USDt — a real ERC-20 transfer, there's the calldata, `0xa9059cbb`. No house takes a cut." |
 | **1:55–2:30** | **T3 + T4 split:** run both peers with `--edge`. Show each peer's own `Gaffer:` line, then `📥 … staked`, `✍️ co-signed`, `🏁 co-signed 2/2`, `🏆 … wins the pot`. | "And the pool syncs peer-to-peer — no server. Each device runs its *own* on-device Gaffer, then they find each other over Hyperswarm — the real Pears building block — swap signed stakes, and co-sign the result two-of-two. No operator decides the outcome. Then they settle, directly." |
-| **2:30–2:50** | **Browser:** the Sepolia Etherscan tx page — **Status: Success**, the value transfer to the winner. | "And this isn't a mock. Here's a real settlement broadcast from a player's own WDK wallet, on-chain on Sepolia — confirmed, no operator in the middle." |
+| **2:30–2:50** | **Browser:** the Sepolia Etherscan tx page — **Status: Success**, a **USDt** token transfer to the winner. | "And this isn't a mock. Here's a real USDt settlement broadcast from a player's own WDK wallet, on-chain on Sepolia — confirmed, no operator in the middle." |
 | **2:50–3:00** | Title card: **QVAC · WDK · Pears**. | "Your analyst on-device with QVAC, your stakes self-custodial with WDK, your pool peer-to-peer with Pears. Three Tether tracks, one football product — no house, no cloud, your keys." |
 
 ---
@@ -63,7 +63,7 @@ to his timing and runs beyond the striker [doc: player-bellingham.txt].
 🏆 Alice wins the 20 USDt pot — paid directly by peers, keys never left the device.
 ```
 
-**Real on-chain proof** (browser): Sepolia Etherscan, tx `0xd8fbc0…`, **Status: Success**, block 11224060 — a WDK self-custody settlement that actually happened.
+**Real on-chain proof** (browser): Sepolia Etherscan, USDt settlement tx `0xf11cdb…`, **Status: Success** — a WDK self-custody USDt transfer that actually happened (Alice ends holding 10 USDt on-chain).
 
 ## Commands (paste-ready)
 ```bash
