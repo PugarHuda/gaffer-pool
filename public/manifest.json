@@ -1,7 +1,7 @@
 {
-  "name": "Sehat — Family Health, On-Device",
-  "short_name": "Sehat",
-  "description": "Private family health assistant. 100% on-device AI via QVAC SDK.",
+  "name": "Gaffer — Football Analyst, On-Device",
+  "short_name": "Gaffer",
+  "description": "Football match analyst + self-custodial prediction pool. 100% on-device (QVAC + WDK + Pears).",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0e1512",

@@ -12,7 +12,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import WDK from "@tetherto/wdk";
 import WalletManagerEvm, { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
-import { SehatEngine } from "./engine.js";
+import { GafferEngine } from "./engine.js";
 import { AuditLogger } from "./audit-logger.js";
 
 const log = new AuditLogger("artifacts/audit-log.jsonl");
@@ -75,7 +75,7 @@ async function main() {
   console.log(`Bob    ${bob.address}\n`);
 
   // --- 2. QVAC edge: the analyst reads the local corpus and briefs the pool. ---
-  const engine = new SehatEngine();
+  const engine = new GafferEngine();
   console.log("Loading on-device analyst (Qwen3-4B + GTE-large)...");
   await engine.start();
   const dir = "data/football";

@@ -64,6 +64,8 @@ to his timing and runs beyond the striker [doc: player-bellingham.txt].
 🏆 Alice wins 40 USDt from Bob at Gaffer's 5× — paid directly, keys never left the device.
 ```
 
+> The demo backs **AWAY at 5×** — the AI's *underdog*, so a win pays big. You can back the AI's favourite for safer odds, or take the underdog for a bigger payout — the odds are the AI's honest price either way.
+
 **Real on-chain proof** (browser): Sepolia Etherscan, USDt settlement tx `0xf11cdb…`, **Status: Success** — a WDK self-custody USDt transfer that actually happened (Alice ends holding 10 USDt on-chain).
 
 ## Commands (paste-ready)

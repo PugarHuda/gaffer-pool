@@ -128,6 +128,13 @@ npm start                # on-device Gaffer chat web UI (https://localhost:8787)
 
 Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs on a 6 GB GPU (the embedder is placed on CPU for VRAM headroom).
 
+### Requirements & reproducibility
+
+- Tested on **Windows 11 + a 6 GB NVIDIA GPU**; **Node ≥ 22**.
+- **First run downloads models** via the QVAC SDK (~2.5 GB Qwen, plus GTE-large), then caches them — later runs are offline.
+- **Less/no GPU?** Set `GAFFER_GPU_LAYERS=0` to run the LLM on CPU (slower); the embedder already runs on CPU.
+- The **P2P demo needs two terminals** (one per peer).
+
 Useful env knobs:
 
 - `MODEL=medgemma|medpsy` — swap the local LLM.

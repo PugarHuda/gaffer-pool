@@ -1,7 +1,7 @@
-// Minimal service worker: makes Sehat installable. Network-first for everything
+// Minimal service worker: makes Gaffer installable. Network-first for everything
 // so the app always updates; old caches are purged on activate. The app shell
 // is NOT pre-cached (avoids serving a stale UI). API calls always pass through.
-const SHELL = "sehat-shell-v4";
+const SHELL = "gaffer-shell-v1";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
   e.waitUntil(

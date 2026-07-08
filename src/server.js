@@ -1,16 +1,16 @@
-// Sehat desktop server: mobile web UI on the LAN + voice + Indonesian mode,
+// Gaffer desktop server: mobile web UI on the LAN + voice + ID/EN translation,
 // optionally doubling as a QVAC P2P provider.
 //
-//   node src/server.js             -> HTTPS (if certs/sehat.pfx exists) else HTTP
-//   SEHAT_P2P=1 node src/server.js -> also start the P2P provider
+//   node src/server.js              -> HTTPS (if certs/gaffer.pfx exists) else HTTP
+//   GAFFER_P2P=1 node src/server.js -> also start the P2P provider
 import { createServer as createHttpServer } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
 import { readFileSync, readdirSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import { tmpdir, networkInterfaces } from "node:os";
 import { startQVACProvider, loadModel, unloadModel, transcribe, WHISPER_LARGE_V3_TURBO } from "@qvac/sdk";
-import { SehatEngine } from "./engine.js";
-import { SehatAgent } from "./agent.js";
+import { GafferEngine } from "./engine.js";
+import { GafferAgent } from "./agent.js";
 import { Translator } from "./translator.js";
 import { loadTeams, loadPlayers } from "./football-data.js";
 import { textToSpeech, TTS_EN_SUPERTONIC_Q8_0, ocr, OCR_LATIN_RECOGNIZER_1 } from "@qvac/sdk";
@@ -33,7 +33,7 @@ function parseProbs(text) {
 }
 
 const PORT = Number(process.env.PORT ?? 8787);
-const engine = new SehatEngine();
+const engine = new GafferEngine();
 
 console.log("Starting Gaffer engine (Qwen3-4B + GTE-large, on-device)...");
 await engine.start();
@@ -134,7 +134,7 @@ async function getAgent() {
   await claimSlot("agent");
   if (!agent) {
     console.log("Loading Qwen3 orchestrator for agent mode...");
-    agent = new SehatAgent({ engine }); // shares the already-loaded MedPsy specialist
+    agent = new GafferAgent({ engine }); // shares the already-loaded Qwen specialist
     await agent.start();
   }
   return agent;
@@ -142,7 +142,7 @@ async function getAgent() {
 
 // One inference at a time; later requests queue up.
 let queue = Promise.resolve();
-let p2pKey = null; // set when started as a P2P provider (SEHAT_P2P=1)
+let p2pKey = null; // set when started as a P2P provider (GAFFER_P2P=1)
 
 const html = readFileSync("public/index.html");
 const STATIC = {
@@ -152,9 +152,9 @@ const STATIC = {
   "/icon-512.png": ["image/png", readFileSync("public/icon-512.png")],
 };
 
-// Optional family PIN: set SEHAT_PIN=1234 to require it on every /api/* call.
+// Optional access PIN: set GAFFER_PIN=1234 to require it on every /api/* call.
 // Empty = open (LAN trust). The app page itself always loads so it can prompt.
-const SEHAT_PIN = process.env.SEHAT_PIN || "";
+const GAFFER_PIN = process.env.GAFFER_PIN || "";
 
 async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -166,9 +166,9 @@ async function handler(req, res) {
   }
 
   // PIN gate for API routes (when enabled).
-  if (SEHAT_PIN && url.pathname.startsWith("/api/")) {
-    const given = req.headers["x-sehat-pin"] || url.searchParams.get("pin") || "";
-    if (given !== SEHAT_PIN) {
+  if (GAFFER_PIN && url.pathname.startsWith("/api/")) {
+    const given = req.headers["x-gaffer-pin"] || url.searchParams.get("pin") || "";
+    if (given !== GAFFER_PIN) {
       res.writeHead(401, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "pin required" }));
     }
@@ -264,7 +264,7 @@ async function handler(req, res) {
         res.writeHead(400, { "content-type": "application/json" });
         return res.end(JSON.stringify({ error: "audio too short" }));
       }
-      const tmp = join(tmpdir(), `sehat-voice-${Date.now()}.wav`);
+      const tmp = join(tmpdir(), `gaffer-voice-${Date.now()}.wav`);
       writeFileSync(tmp, wav);
       try {
         const modelId = await getStt();
@@ -325,7 +325,11 @@ async function handler(req, res) {
     req.on("end", async () => {
       try {
         const { outcome, role, stake, odds, result } = JSON.parse(body);
-        if (!OUTCOMES[outcome] || !OUTCOMES[result]) throw new Error("invalid outcome/result");
+        if (!OUTCOMES[outcome] || !OUTCOMES[result]) throw new Error("outcome/result must be one of HOME, DRAW, AWAY");
+        if (role !== "back" && role !== "lay") throw new Error("role must be back or lay");
+        const price = Number(odds), stakeAmt = Number(stake);
+        if (!Number.isFinite(stakeAmt) || stakeAmt <= 0) throw new Error("stake must be a positive number");
+        if (!Number.isFinite(price) || price <= 1) throw new Error("odds must be a number greater than 1");
         const backerIsUser = role === "back";
         const wallets = {};
         for (const who of ["user", "counterparty"]) {
@@ -336,7 +340,6 @@ async function handler(req, res) {
         }
         const backer = backerIsUser ? wallets.user : wallets.counterparty;
         const layer = backerIsUser ? wallets.counterparty : wallets.user;
-        const price = Number(odds), stakeAmt = Number(stake);
         const liability = +(stakeAmt * (price - 1)).toFixed(2);
         const payout = +(stakeAmt * price).toFixed(2);
         const backerSig = await backer.account.sign(`Gaffer Pool | back ${outcome} @ ${price}x | ${backer.address}`);
@@ -435,7 +438,7 @@ async function handler(req, res) {
       const img = Buffer.concat(chunks);
       if (img.length < 200) { res.writeHead(400, { "content-type": "application/json" }); return res.end(JSON.stringify({ ok: false, error: "image too small" })); }
       const ext = (req.headers["content-type"] || "").includes("png") ? "png" : "jpg";
-      const tmp = join(tmpdir(), `sehat-upload-${Date.now()}.${ext}`);
+      const tmp = join(tmpdir(), `gaffer-upload-${Date.now()}.${ext}`);
       writeFileSync(tmp, img);
       queue = queue
         .then(async () => {
@@ -512,8 +515,8 @@ async function handler(req, res) {
   res.end("not found");
 }
 
-const PFX = "certs/sehat.pfx";
-const useTls = existsSync(PFX) && process.env.SEHAT_HTTP !== "1";
+const PFX = "certs/gaffer.pfx";
+const useTls = existsSync(PFX) && process.env.GAFFER_HTTP !== "1";
 const HTTP_PORT = PORT + 1; // plain-HTTP fallback (8788): no cert prompt; mic disabled
 
 const lanIps = () =>
@@ -542,9 +545,9 @@ for (const ip of lanIps()) {
   }
 }
 console.log(`Local:               ${useTls ? "https" : "http"}://localhost:${PORT}`);
-if (SEHAT_PIN) console.log(`🔒 Family PIN required (SEHAT_PIN set).`);
+if (GAFFER_PIN) console.log(`🔒 Access PIN required (GAFFER_PIN set).`);
 
-if (process.env.SEHAT_P2P === "1") {
+if (process.env.GAFFER_P2P === "1") {
   startQVACProvider({}).then((p) => {
     if (p.success) { p2pKey = p.publicKey; console.log(`\nP2P provider public key (remote family node):\n${p.publicKey}`); }
   });

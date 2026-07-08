@@ -4,12 +4,12 @@
 // Complements our audit logger with first-party SDK telemetry.
 import { writeFileSync } from "node:fs";
 import { profiler } from "@qvac/sdk";
-import { SehatEngine } from "./engine.js";
+import { GafferEngine } from "./engine.js";
 
 profiler.enable({ mode: "verbose", includeServerBreakdown: true });
 console.log("QVAC profiler enabled:", profiler.isEnabled());
 
-const engine = new SehatEngine();
+const engine = new GafferEngine();
 await engine.start();
 
 const question = "How has Budi's blood sugar changed over his last tests?";

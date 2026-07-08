@@ -1,11 +1,9 @@
-// Sehat multi-agent orchestration with QVAC tool calling.
+// Gaffer football-analyst orchestration with QVAC tool calling.
 //
 // Architecture (all on-device):
 //   Qwen3 1.7B  = orchestrator agent (tools: true, dynamic mode)
-//     ├─ tool: search_records     -> RAG over the family workspace
-//     ├─ tool: calculate_change   -> deterministic math (no LLM arithmetic!)
-//     └─ tool: consult_medgemma   -> hands medical interpretation to the
-//                                    MedGemma 4B specialist agent
+//     ├─ tool: search_records     -> RAG over the football workspace
+//     └─ tool: calculate_change   -> deterministic math (no LLM arithmetic!)
 import { z } from "zod";
 import {
   completion,
@@ -14,18 +12,18 @@ import {
   ragSearch,
   QWEN3_1_7B_INST_Q4,
 } from "@qvac/sdk";
-import { SehatEngine } from "./engine.js";
+import { GafferEngine } from "./engine.js";
 import { AuditLogger } from "./audit-logger.js";
 
-const WORKSPACE = "sehat-family";
+const WORKSPACE = "gaffer-analyst";
 
 const TOOLS = [
   {
     name: "search_records",
     description:
-      "Search the family's health documents (lab results, prescriptions, vaccination records, doctor notes). Returns the most relevant excerpts.",
+      "Search the football corpus (team & player profiles, match reports, form/xG notes, tactics). Returns the most relevant excerpts.",
     parameters: z.object({
-      query: z.string().describe("What to look for, e.g. 'Budi cholesterol 2025'"),
+      query: z.string().describe("What to look for, e.g. 'Man City form last 5'"),
     }),
   },
   {
@@ -33,33 +31,25 @@ const TOOLS = [
     description:
       "Exactly compute the absolute and percentage change between two numeric values. Use this instead of doing arithmetic yourself.",
     parameters: z.object({
-      metric: z.string().describe("Name of the metric, e.g. 'total cholesterol'"),
+      metric: z.string().describe("Name of the metric, e.g. 'xG over last 5'"),
       old_value: z.number().describe("Earlier value"),
       new_value: z.number().describe("Later value"),
     }),
   },
-  {
-    name: "consult_medgemma",
-    description:
-      "Ask the on-device MedGemma medical specialist to interpret findings. Use for medical meaning, risk, or guidance questions. Pass full context in the question.",
-    parameters: z.object({
-      question: z.string().describe("Complete, self-contained medical question including the relevant numbers"),
-    }),
-  },
 ];
 
-export class SehatAgent {
+export class GafferAgent {
   // Pass an already-started `engine` to share the server's loaded models
-  // (saves ~3 GB VRAM vs loading a second MedGemma instance).
+  // (saves ~3 GB VRAM vs loading a second Qwen instance).
   constructor({ auditLogPath = "artifacts/audit-log.jsonl", engine = null } = {}) {
     this.log = new AuditLogger(auditLogPath);
     this.ownsEngine = !engine;
-    this.engine = engine ?? new SehatEngine({ auditLogPath });
+    this.engine = engine ?? new GafferEngine({ auditLogPath });
     this.orchestratorId = null;
   }
 
   async start() {
-    if (this.ownsEngine) await this.engine.start(); // MedGemma specialist + embeddings
+    if (this.ownsEngine) await this.engine.start(); // Qwen specialist + embeddings
     const t = performance.now();
     this.orchestratorId = await loadModel({
       modelSrc: QWEN3_1_7B_INST_Q4,
@@ -101,9 +91,6 @@ export class SehatAgent {
         `${metric}: ${old_value} -> ${new_value}. ` +
         `Absolute change: ${abs.toFixed(2)}. Percentage change: ${pct.toFixed(1)}%. ` +
         `Direction: ${abs < 0 ? "decrease" : abs > 0 ? "increase" : "no change"}.`;
-    } else if (call.name === "consult_medgemma") {
-      const { answer } = await this.engine.ask(String(call.arguments.question ?? ""), {});
-      result = answer;
     } else {
       result = `Unknown tool: ${call.name}`;
     }
@@ -121,9 +108,9 @@ export class SehatAgent {
       {
         role: "system",
         content:
-          "You are the Sehat orchestrator, coordinating on-device health tools for a family. " +
-          "Plan step by step: search records first, use calculate_change for any arithmetic, " +
-          "and consult_medgemma for medical interpretation. Then give a short final answer. " +
+          "You are the Gaffer orchestrator, coordinating on-device football-analysis tools. " +
+          "Plan step by step: search the football corpus first, use calculate_change for any " +
+          "arithmetic (form, xG, price/odds deltas). Then give a short final answer. " +
           "Never invent numbers — only use values returned by tools.",
       },
       { role: "user", content: question },

@@ -2,9 +2,9 @@
 // questions over it with Qwen3-4B + GTE-large — fully local, with audit logging.
 import { readFileSync, readdirSync } from "node:fs";
 import { join, basename } from "node:path";
-import { SehatEngine } from "./engine.js";
+import { GafferEngine } from "./engine.js";
 
-const engine = new SehatEngine();
+const engine = new GafferEngine();
 console.log("Starting Gaffer engine (Qwen3-4B + GTE-large, on-device)...");
 await engine.start();
 

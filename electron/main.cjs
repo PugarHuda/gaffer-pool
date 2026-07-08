@@ -1,4 +1,4 @@
-// Sehat desktop app — a thin Electron shell that boots the local Sehat server
+// Gaffer desktop app — a thin Electron shell that boots the local Gaffer server
 // (all QVAC inference on-device) and opens it in a native window. No cloud.
 //
 //   npm run desktop
@@ -18,14 +18,14 @@ let win = null;
 const APP_URL = `http://localhost:${PORT}`;
 
 function startServer() {
-  // In a packaged app process.execPath is Sehat.exe (Electron). ELECTRON_RUN_AS_NODE
+  // In a packaged app process.execPath is Gaffer.exe (Electron). ELECTRON_RUN_AS_NODE
   // makes it behave as plain Node so server.js runs as an ordinary script.
   serverProc = spawn(process.execPath, [path.join(ROOT, "src", "server.js")], {
     cwd: ROOT,
-    env: { ...process.env, SEHAT_DESKTOP: "1", SEHAT_HTTP: "1", ELECTRON_RUN_AS_NODE: "1" },
+    env: { ...process.env, GAFFER_DESKTOP: "1", GAFFER_HTTP: "1", ELECTRON_RUN_AS_NODE: "1" },
     stdio: "inherit",
   });
-  serverProc.on("exit", (code) => console.log(`[sehat server exited ${code}]`));
+  serverProc.on("exit", (code) => console.log(`[gaffer server exited ${code}]`));
 }
 
 function waitForServer(url, tries = 120) {
@@ -41,7 +41,7 @@ function waitForServer(url, tries = 120) {
 async function createWindow() {
   win = new BrowserWindow({
     width: 430, height: 880, // phone-like; the UI is responsive
-    title: "Sehat — Family Health (on-device)",
+    title: "Gaffer — Football Analyst (on-device)",
     backgroundColor: "#eef1ee",
     webPreferences: { contextIsolation: true },
   });

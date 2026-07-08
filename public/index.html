@@ -189,6 +189,7 @@
       <div class="h">⚽ Gaffer Pool · Real Madrid vs Manchester City — 2nd leg</div>
       Fixed-odds bet at Gaffer's fair price. Odds are estimated <b>on this device</b>; both
       sides get a self-custodial WDK wallet and settle wallet-to-wallet in USDt — no house, no cloud.
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)"><b>Simulation:</b> each bet spins up a fresh throwaway wallet and settles on a testnet. Real on-chain settlement runs via the CLI (<code>pool:wallet</code> + <code>POOL_ONCHAIN=1</code>).</div>
     </div>
 
     <div class="card" style="margin:14px">
@@ -234,7 +235,7 @@
 
 <!-- chat composer -->
 <div class="toggles" id="chatToggles">
-  <label class="tog"><input type="checkbox" id="agentMode" /> <span class="tt">🤖 Agent</span></label>
+  <label class="tog" title="Multi-step analyst: searches the football corpus and does exact math (form, xG, odds) via tools before answering"><input type="checkbox" id="agentMode" /> <span class="tt">🤖 Agent</span></label>
   <label class="tog"><input type="checkbox" id="autoSave" checked /> <span class="tt">📌 Auto-save</span></label>
 </div>
 <form id="f">
@@ -277,7 +278,7 @@
   const chat = $("chat"), form = $("f"), input = $("q"), send = $("send");
 
   // ---- optional family PIN: auto-attach to every /api/* call ----
-  let PIN = localStorage.getItem("sehat-pin") || "";
+  let PIN = localStorage.getItem("gaffer-pin") || "";
   const _addPin = (u) => {
     try {
       const s = typeof u === "string" ? u : u.url;
@@ -296,16 +297,16 @@
       if (!r || r.status !== 401) return;
       const p = await askPrompt("Access PIN", { desc: "Enter the PIN to access Gaffer on this device." });
       if (!p) return;
-      PIN = p.trim(); localStorage.setItem("sehat-pin", PIN);
+      PIN = p.trim(); localStorage.setItem("gaffer-pin", PIN);
     }
   })();
 
   // ---- profile name (stored on this device only) ----
-  let ME = localStorage.getItem("sehat-me") || "";
+  let ME = localStorage.getItem("gaffer-me") || "";
   function renderProfile() { $("profileBtn").textContent = ME ? `👤 ${ME}` : "👤 Set name"; }
   $("profileBtn").onclick = async () => {
     const n = await askPrompt("Your name", { desc: "Used to label records you report in chat, and to show your own card.", value: ME, placeholder: "e.g. Huda" });
-    if (n) { ME = n.slice(0, 40); localStorage.setItem("sehat-me", ME); renderProfile(); }
+    if (n) { ME = n.slice(0, 40); localStorage.setItem("gaffer-me", ME); renderProfile(); }
   };
   renderProfile();
 
@@ -406,8 +407,8 @@
     } catch (e) { box.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   }
   // ---- chat ----
-  const history = JSON.parse(localStorage.getItem("sehat-history") || "[]");
-  function persist(cls, text) { history.push({ cls, text }); while (history.length > 200) history.shift(); localStorage.setItem("sehat-history", JSON.stringify(history)); }
+  const history = JSON.parse(localStorage.getItem("gaffer-history") || "[]");
+  function persist(cls, text) { history.push({ cls, text }); while (history.length > 200) history.shift(); localStorage.setItem("gaffer-history", JSON.stringify(history)); }
   function add(cls, text, opt = {}) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; if (opt.save !== false) persist(cls, text); return d; }
   function addMeta(html, opt = {}) { const d = document.createElement("div"); d.className = "meta"; d.innerHTML = html; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; if (opt.save !== false) persist("__meta", html); }
   for (const m of history) { if (m.cls === "__meta") addMeta(m.text, { save: false }); else add(m.cls, m.text, { save: false }); }
