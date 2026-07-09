@@ -438,7 +438,8 @@
     } catch (e) { box.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   }
   // ---- chat ----
-  const history = JSON.parse(localStorage.getItem("gaffer-history") || "[]");
+  let history; try { history = JSON.parse(localStorage.getItem("gaffer-history") || "[]"); } catch { history = []; } // corrupt storage must not brick the chat
+  if (!Array.isArray(history)) history = [];
   function persist(cls, text) { history.push({ cls, text }); while (history.length > 200) history.shift(); localStorage.setItem("gaffer-history", JSON.stringify(history)); }
   function add(cls, text, opt = {}) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; if (opt.save !== false) persist(cls, text); return d; }
   function addMeta(html, opt = {}) { const d = document.createElement("div"); d.className = "meta"; d.innerHTML = html; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; if (opt.save !== false) persist("__meta", html); }

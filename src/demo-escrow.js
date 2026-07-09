@@ -80,8 +80,9 @@ const erc20 = parseAbi(["function approve(address,uint256) returns (bool)", "fun
 console.log(`backer ${backer.address}  layer ${layer.address}`);
 const before = await pub.readContract({ address: USDT, abi: erc20, functionName: "balanceOf", args: [backer.address] });
 
-// deploy
-const hash = await wBack.deployContract({ abi, bytecode, args: [USDT, backer.address, layer.address, outcome, stake, liability] });
+// deploy (deadline = 1 day out; after it, unsettled deposits are refundable)
+const deadline = BigInt(Math.floor(Date.now() / 1000) + 86400);
+const hash = await wBack.deployContract({ abi, bytecode, args: [USDT, backer.address, layer.address, outcome, stake, liability, deadline] });
 const rc = await pub.waitForTransactionReceipt({ hash });
 const escrow = rc.contractAddress;
 console.log(`🚀 escrow deployed: ${escrow}`);

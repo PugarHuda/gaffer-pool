@@ -59,19 +59,22 @@ if (!probe || probe.hits.length === 0) {
 // active optional model when you switch features.
 let translator = null, sttId = null, ocrId = null, ttsId = null, agent = null;
 let optActive = null;
+let tmpSeq = 0; // makes voice/upload tmp filenames unique even within the same ms
 async function claimSlot(key) {
   if (optActive === key) return;
-  if (optActive) {
+  const prev = optActive;
+  optActive = key; // advance first, and null each handle BEFORE its await, so if
+                   // unload throws we never leave a stale id that getX() would reuse.
+  if (prev) {
     try {
-      if (optActive === "stt" && sttId) { await unloadModel({ modelId: sttId }); sttId = null; }
-      else if (optActive === "ocr" && ocrId) { await unloadModel({ modelId: ocrId }); ocrId = null; }
-      else if (optActive === "tts" && ttsId) { await unloadModel({ modelId: ttsId }); ttsId = null; }
-      else if (optActive === "agent" && agent) { await agent.stop(); agent = null; }
-      else if (optActive === "translator" && translator) { await translator.stop(); translator = null; }
-      console.log(`[vram] unloaded optional model '${optActive}' (switching to '${key}')`);
-    } catch (e) { console.warn(`[vram] unload '${optActive}' failed: ${e.message}`); }
+      if (prev === "stt" && sttId) { const id = sttId; sttId = null; await unloadModel({ modelId: id }); }
+      else if (prev === "ocr" && ocrId) { const id = ocrId; ocrId = null; await unloadModel({ modelId: id }); }
+      else if (prev === "tts" && ttsId) { const id = ttsId; ttsId = null; await unloadModel({ modelId: id }); }
+      else if (prev === "agent" && agent) { const a = agent; agent = null; await a.stop(); }
+      else if (prev === "translator" && translator) { const t = translator; translator = null; await t.stop(); }
+      console.log(`[vram] unloaded optional model '${prev}' (switching to '${key}')`);
+    } catch (e) { console.warn(`[vram] unload '${prev}' failed: ${e.message}`); }
   }
-  optActive = key;
 }
 
 async function getTranslator() {
@@ -256,16 +259,16 @@ async function handler(req, res) {
   }
 
   if (req.method === "POST" && url.pathname === "/api/voice") {
-    const chunks = [];
+    const chunks = []; let vsize = 0;
     req.on("error", () => {});
-    req.on("data", (c) => chunks.push(c));
+    req.on("data", (c) => { vsize += c.length; if (vsize > 25_000_000) return req.destroy(); chunks.push(c); }); // cap: ~25 MB of audio
     req.on("end", () => {
       const wav = Buffer.concat(chunks);
       if (wav.length < 1000) {
         res.writeHead(400, { "content-type": "application/json" });
         return res.end(JSON.stringify({ error: "audio too short" }));
       }
-      const tmp = join(tmpdir(), `gaffer-voice-${Date.now()}.wav`);
+      const tmp = join(tmpdir(), `gaffer-voice-${Date.now()}-${tmpSeq++}.wav`);
       writeFileSync(tmp, wav);
       // Serialize through the shared queue so STT never runs concurrently with a
       // chat/odds inference on the single Bare worker (would crash the GPU).
@@ -400,7 +403,7 @@ async function handler(req, res) {
       const img = Buffer.concat(chunks);
       if (img.length < 200) { res.writeHead(400, { "content-type": "application/json" }); return res.end(JSON.stringify({ ok: false, error: "image too small" })); }
       const ext = (req.headers["content-type"] || "").includes("png") ? "png" : "jpg";
-      const tmp = join(tmpdir(), `gaffer-upload-${Date.now()}.${ext}`);
+      const tmp = join(tmpdir(), `gaffer-upload-${Date.now()}-${tmpSeq++}.${ext}`);
       writeFileSync(tmp, img);
       queue = queue
         .then(async () => {

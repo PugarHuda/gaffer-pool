@@ -154,9 +154,7 @@ async function maybeSettle(result) {
   const sigs = [...resultSigs.values()];
   const agreed = sigs.length >= 2 && sigs.every((s) => s.result === result);
   if (stakes.size < 2 || !agreed) return;
-  settled = true;   // in-memory re-entry guard; the DURABLE marker is written only
-                    // after we actually settle below (so a failed transfer or a
-                    // voided bet is recoverable — no false "already settled").
+  settled = true;   // in-memory re-entry guard (stops a double maybeSettle within one run)
 
   // A fixed-odds bet: one back + one lay on the same outcome & odds. The odds
   // set the money — a winning back is paid the layer's liability = stake×(odds−1).
@@ -176,8 +174,14 @@ async function maybeSettle(result) {
   console.log(`\n🏁 Result ${result} (${OUTCOMES[result]}) — co-signed 2/2.`);
   console.log(`   Bet: back ${backer.outcome} @ ${price}× for ${stake} USDt → ${winner.name} wins ${backerWins ? `${stake + liability} USDt (stake ${stake} + ${liability})` : `${stake} USDt`}.`);
 
+  // Durable "settled" marker is written BEFORE broadcasting the transfer so a
+  // restart can never pay twice. ponytail: this trades an irrecoverable double-pay
+  // for a possible settled-but-unpaid if the transfer itself crashes/reverts
+  // (recoverable — inspect the log and pay manually, or use the on-chain escrow).
+  await persist({ t: "settled", by: name });
+
   // Self-custodial settlement: if I lost, I pay the winner the odds-driven amount
-  // directly (honor-based — stakes are signed, not escrowed; escrow is the roadmap).
+  // directly (honor-based — stakes are signed, not escrowed; escrow is contracts/PoolEscrow.sol).
   if (loser.address === myAddress) {
     const opts = { token: USDT, recipient: winner.address, amount: units(amount) };
     if (process.env.POOL_ONCHAIN === "1") {
@@ -193,7 +197,6 @@ async function maybeSettle(result) {
   } else {
     console.log(`🏆 ${winner.name} wins ${amount} USDt from ${loser.name} at Gaffer's ${price}× — paid directly, keys never left the device.`);
   }
-  await persist({ t: "settled", by: name });   // durable marker only AFTER settling
   finish();
 }
 
