@@ -11,6 +11,7 @@
     "test:gpu": "node src/gpu-test.js",
     "demo:analyst": "node src/demo-analyst.js",
     "demo:pool": "node src/demo-pool.js",
+    "demo:escrow": "node src/demo-escrow.js",
     "pool:p2p": "node src/pool-p2p.js",
     "pool:wallet": "node src/pool-wallet.js",
     "profile": "node src/profile-run.js",
