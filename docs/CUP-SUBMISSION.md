@@ -29,12 +29,12 @@ The AI is each player's private advisor, the money layer is self-custodial, the 
 `npm run demo:pool` — Each player holds their own keys: a self-custodial WDK wallet (`@tetherto/wdk` → seed phrase → EVM account). Each player **signs their own stake** with their own key, and the pot settles **wallet-to-wallet in USDt** — a real ERC-20 `transfer`. A judge sees the two self-custody addresses, each signed pick, the result, and the settlement calldata (`0xa9059cbb…`). The twist: Gaffer turns its edge into **money** — its on-device probabilities set **fair, no-house odds** (a fixed-odds back/lay bet where the layer escrows liability = stake×(odds−1); e.g. `AWAY @ 5×` → the losing layer pays 40 USDt). The AI's read is the odds — back its favourite for safer odds, or take the underdog for a bigger payout; the price is the AI's honest number either way.
 
 ### Pears — P2P pool sync, no server
-`npm run pool:p2p -- MATCH42 Alice AWAY --result AWAY --edge` (one peer) + `npm run pool:p2p -- MATCH42 Bob HOME --edge` (other) — The pool is a signed, append-only **Hypercore** log on disk — tamper-evident and it **survives restarts** (a resumed peer prints `resuming persistent Hypercore pool log — N entries`). It syncs between peers over **Hyperswarm** (a real Pears building block, not WebRTC): peers join a shared topic, no server. Each records a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — no operator decides the outcome. A judge sees two peers discover each other over the DHT, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer.
+`npm run pool:p2p -- MATCH42 Alice AWAY --odds 5 --result AWAY --edge` (backs) + `npm run pool:p2p -- MATCH42 Bob AWAY --odds 5 --lay --edge` (lays) — The pool is a signed, append-only **Hypercore** log on disk — tamper-evident and it **survives restarts** (a resumed peer prints `resuming persistent Hypercore pool log — N entries`). It syncs between peers over **Hyperswarm** (a real Pears building block, not WebRTC): peers join a shared topic, no server. Each records a **signed** stake, and the match result is agreed by **2-of-2 co-signing** — no operator decides the outcome. A judge sees two peers discover each other over the DHT, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer.
 
 ## What's verifiable right now
 
 - **Real on-chain USDt settlement (Sepolia):** the losing WDK wallet signs and broadcasts a USDt ERC-20 transfer to the winner — **the AI's odds set the amount**. A 5× back/lay settled for **40 USDt**: [tx `0x328726…`](https://sepolia.etherscan.io/tx/0x32872699055513e9eed579cfb667bae1634129ae9261bab174984f1387ad96b4), **Status: Success** (balances moved Alice +40 / Bob −40). No operator in the middle — the WDK key alone moved the money.
-- **Trustless escrow (`contracts/PoolEscrow.sol`):** for stakes between strangers, both players lock their side into an on-chain escrow and the pot releases only on a **2-of-2 co-signed result** — the contract, not honour, holds the money. Settlement math self-checked (`npm run demo:escrow`); deploys + runs a full fund → co-sign → release cycle on Sepolia with `ESCROW_ONCHAIN=1`.
+- **Trustless escrow (`contracts/PoolEscrow.sol`):** for stakes between strangers, both players lock their side into an on-chain escrow and the pot releases only on a **2-of-2 co-signed result** — the contract, not honour, holds the money. A `deadline` + `refund()` safety valve means no deposit can be locked forever if the two never agree. Settlement math self-checked (`npm run demo:escrow`); deploys + runs a full fund → co-sign → release cycle on Sepolia with `ESCROW_ONCHAIN=1`.
 - **Persistent P2P pool:** restart a peer and it prints `resuming persistent Hypercore pool log — N entries` — the state lived on disk, not a server.
 - **Cited on-device answers:** `demo:analyst` streams answers with `[doc: …]` citations and live TTFT/tokens/tok-s stats, all local.
 
@@ -46,6 +46,7 @@ Requires **Node ≥ 22** (Windows/PowerShell friendly). Public repo: [github.com
 npm install
 npm run demo:analyst   # QVAC: on-device cited analysis
 npm run demo:pool      # WDK: self-custody stakes, AI fair-odds + USDt settlement
+npm run demo:escrow    # WDK: trustless 2-of-2 on-chain escrow (self-check; ESCROW_ONCHAIN=1 to deploy)
 npm run pool:p2p -- <code> <name> <OUTCOME> --odds <N> [--lay] [--result R] [--edge]   # Pears: peer sync
 npm run pool:wallet    # print wallets to fund + on-chain runbook
 npm start              # on-device Gaffer chat web UI
@@ -59,7 +60,7 @@ Models auto-download once via the QVAC SDK, then cache (~2.5 GB for Qwen). Runs 
 - The on-chain proof uses a **test USDt we deployed ourselves** (6 decimals) — Tether doesn't issue test-USDt on Sepolia, so we're honest about that; the mechanism is **identical** to real USDt.
 - The P2P demo runs **two peers on one machine** over the real Hyperswarm DHT — the network is real, the two devices are simulated side by side.
 - The **per-peer edge** uses a smaller **Qwen3-1.7B on CPU** so two peers can share one GPU; the standalone analyst uses the full Qwen3-4B.
-- Settlement is **self-custodial but honor-based**: each side's stake is *signed*, not *escrowed*, so nothing yet forces a loser to pay. Locking funds in an **escrow contract** (and true multi-writer replication via **Autobase** + running under `pear run` / **pear-runtime**) are the clear next steps.
+- P2P settlement defaults to **honor-based** (each side's stake is *signed*, not escrowed). For stakes between strangers, the on-chain **escrow contract (`contracts/PoolEscrow.sol`) now locks both sides and auto-releases the pot on a 2-of-2 co-signed result** (`npm run demo:escrow`; `ESCROW_ONCHAIN=1` to deploy on Sepolia). Still clearly next: true multi-writer replication via **Autobase**, and running under `pear run` / **pear-runtime**.
 
 ## Reused work (disclosure)
 
@@ -70,7 +71,7 @@ Per the Cup rules, here's what predates the event: the **on-device QVAC plumbing
 - **AI (on-device):** `@qvac/sdk`; models Qwen3-4B, Qwen3-1.7B, GTE-large (and Whisper/Supertonic/OCR for the optional voice path) — all run locally, no cloud AI.
 - **Wallet:** `@tetherto/wdk`, `@tetherto/wdk-wallet-evm`.
 - **P2P:** `hyperswarm`, `hypercore`, `corestore`, `hypercore-crypto`, `b4a`.
-- **Chain (testnet only):** a public Sepolia RPC (`ethereum-sepolia-rpc.publicnode.com`) for broadcasting; a **test USDt ERC-20 we deployed ourselves**. `viem` + `solc` were used **once, dev-only** (not shipped deps) to deploy/mint the test token.
+- **Chain (testnet only):** a public Sepolia RPC (`ethereum-sepolia-rpc.publicnode.com`) for broadcasting; a **test USDt ERC-20 we deployed ourselves**. `viem` + `solc` are **dev-only** (not shipped deps): used to deploy/mint the test token, and imported at runtime by `demo:escrow` under `ESCROW_ONCHAIN=1` to compile and deploy the escrow contract.
 - **Misc:** `qrcode`, Electron/electron-forge (desktop shell). Language: Node ≥22, plain browser JS (no build step).
 
 ## Real use of tracks

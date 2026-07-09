@@ -62,7 +62,7 @@ On-chain broadcast is **opt-in**: set `POOL_ONCHAIN=1` with funded Sepolia walle
 
 Token: [`0xd7e2Bc5F…198e6B`](https://sepolia.etherscan.io/token/0xd7e2Bc5F7D2690159c5d8E8B3A4648c8E1198e6B) — a test USDt we deployed (6 decimals, public `mint`), the default `POOL_USDT` so `POOL_ONCHAIN=1` works out of the box (fund the loser's wallet with Sepolia ETH + mint a little USDt via `npm run pool:wallet`).
 
-**Trustless option — on-chain escrow.** Instead of trusting the loser to pay, both players can lock their side into [`contracts/PoolEscrow.sol`](contracts/PoolEscrow.sol): each `fund()`s their stake/liability, both `agree(result)` on-chain (the same **2-of-2 co-signing**, now enforced by the contract), and the pot auto-releases to the winner — no operator can move the money. `npm run demo:escrow` self-checks the settlement math; `ESCROW_ONCHAIN=1 npm run demo:escrow` deploys it and runs a full fund → co-sign → release cycle on Sepolia.
+**Trustless option — on-chain escrow.** Instead of trusting the loser to pay, both players can lock their side into [`contracts/PoolEscrow.sol`](contracts/PoolEscrow.sol): each `fund()`s their stake/liability, both `agree(result)` on-chain (the same **2-of-2 co-signing**, now enforced by the contract), and the pot auto-releases to the winner — no operator can move the money. A `deadline` + `refund()` safety valve lets each player reclaim their own deposit if the bet never settles, so funds can't be locked forever. `npm run demo:escrow` self-checks the settlement math; `ESCROW_ONCHAIN=1 npm run demo:escrow` deploys it and runs a full fund → co-sign → release cycle on Sepolia.
 
 ### 3. Pears — P2P pool sync
 
@@ -168,7 +168,7 @@ Useful env knobs:
 - **WDK trustless escrow** — `contracts/PoolEscrow.sol` (compiles; settlement math self-checked via `npm run demo:escrow`). 2-of-2 co-signed on-chain release, deployable to Sepolia with `ESCROW_ONCHAIN=1`.
 - **Pears P2P sync** — working. `npm run pool:p2p` verified: the pool is a signed Hypercore log on disk (survives restarts), two peers discover over Hyperswarm, exchange signed stakes, co-sign the result 2/2, and settle peer-to-peer with no server.
 - **Corpus** — `data/football/` is synthetic demo data (profiles, a match report, tactics), not live feeds.
-- **Desktop/web UI** — `npm start` serves the on-device Gaffer chat (football corpus, cited answers) on the LAN; verified. Some deeper panels from the reused infrastructure are hidden pending a fuller reskin.
+- **Desktop/web UI** — `npm start` serves the on-device Gaffer web app (Chat with cited answers, a Table/standings view, and a Bet view with on-device odds + WDK settlement) on the LAN; verified, restyled to a neobrutalist look with a left-sidebar layout. Optional server capabilities (voice STT/TTS, OCR, agent mode) are wired up but not all surfaced in the three views yet.
 
 ---
 
