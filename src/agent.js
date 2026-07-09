@@ -75,27 +75,38 @@ export class GafferAgent {
   async #execTool(call) {
     const t = performance.now();
     let result;
-    if (call.name === "search_records") {
-      const hits = await ragSearch({
-        modelId: this.engine.embedId,
-        query: String(call.arguments.query ?? ""),
-        topK: 2,
-        workspace: WORKSPACE,
-      });
-      result = hits.length
-        ? hits.slice(0, 2).map((h) => h.content.slice(0, 360)).join("\n---\n")
-        : "No matching documents.";
-    } else if (call.name === "calculate_change") {
-      const old_value = Number(call.arguments.old_value), new_value = Number(call.arguments.new_value);
-      const { metric } = call.arguments;
-      const abs = new_value - old_value;
-      const pctStr = old_value !== 0 ? `${((abs / old_value) * 100).toFixed(1)}%` : "n/a (from 0)";
-      result =
-        `${metric}: ${old_value} -> ${new_value}. ` +
-        `Absolute change: ${abs.toFixed(2)}. Percentage change: ${pctStr}. ` +
-        `Direction: ${abs < 0 ? "decrease" : abs > 0 ? "increase" : "no change"}.`;
-    } else {
-      result = `Unknown tool: ${call.name}`;
+    // A tool error must feed a string back to the model, never reject and kill the
+    // whole streamed answer.
+    try {
+      if (call.name === "search_records") {
+        const hits = await ragSearch({
+          modelId: this.engine.embedId,
+          query: String(call.arguments.query ?? ""),
+          topK: 2,
+          workspace: WORKSPACE,
+        });
+        result = hits.length
+          ? hits.slice(0, 2).map((h) => h.content.slice(0, 360)).join("\n---\n")
+          : "No matching documents.";
+      } else if (call.name === "calculate_change") {
+        const old_value = Number(call.arguments.old_value), new_value = Number(call.arguments.new_value);
+        const metric = call.arguments.metric ?? "value";
+        if (!Number.isFinite(old_value) || !Number.isFinite(new_value)) {
+          // Never invent numbers — tell the model the args were bad instead of emitting NaN.
+          result = `calculate_change needs numeric old_value and new_value (got ${JSON.stringify(call.arguments.old_value)} and ${JSON.stringify(call.arguments.new_value)}).`;
+        } else {
+          const abs = new_value - old_value;
+          const pctStr = old_value !== 0 ? `${((abs / old_value) * 100).toFixed(1)}%` : "n/a (from 0)";
+          result =
+            `${metric}: ${old_value} -> ${new_value}. ` +
+            `Absolute change: ${abs.toFixed(2)}. Percentage change: ${pctStr}. ` +
+            `Direction: ${abs < 0 ? "decrease" : abs > 0 ? "increase" : "no change"}.`;
+        }
+      } else {
+        result = `Unknown tool: ${call.name}`;
+      }
+    } catch (e) {
+      result = `Tool ${call.name} failed: ${e?.message ?? e}`;
     }
     this.log.inference({
       modelId: this.orchestratorId,

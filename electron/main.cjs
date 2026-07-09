@@ -60,7 +60,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  try { serverProc?.kill(); } catch {}
-  if (process.platform !== "darwin") app.quit();
+  // On macOS the app stays resident and `activate` reopens a window — so keep the
+  // server alive (before-quit kills it on real quit). Elsewhere, quit and free it.
+  if (process.platform !== "darwin") { try { serverProc?.kill(); } catch {} app.quit(); }
 });
 app.on("before-quit", () => { try { serverProc?.kill(); } catch {} });
